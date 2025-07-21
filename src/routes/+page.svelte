@@ -1,12 +1,54 @@
 <script>
     import { onMount } from 'svelte';
 
+// Usuarios predefinidos con sus roles
+const usuarios = {
+  juan: { rol: 'juan', password: 'juan' },
+  frank: { rol: 'frank', password: 'frank' },
+  rodrigo: { rol: 'rodrigo', password: 'rodrigo' },
+  eduardo: { rol: 'eduardo', password: 'eduardo' },
+  luis: { rol: 'luis', password: 'luis' }
+};
+
+let usuarioLogueado = '';
+
+// Variables para el login
+let usuario = '';
+let rol = '';
+let estaLogueado = false;
+let password = '';
+
+
+// Función para hacer login
+function login() {
+  const usuarioNormalizado = usuario.trim().toLowerCase();
+
+  if (usuarios[usuarioNormalizado] && password === usuarios[usuarioNormalizado].password) {
+    rol = usuarios[usuarioNormalizado].rol;
+    usuarioLogueado = usuarioNormalizado;
+    estaLogueado = true;
+
+    pestañaActiva = rol === 'estadistico' ? 'estadisticas' : 'activas';
+  } else {
+    alert('Usuario o contraseña inválidos');
+  }
+}
 
 
 
+function logout() {
+  estaLogueado = false;
+  usuario = '';
+  password = '';
+  rol = '';
+  usuarioLogueado = '';
+  pestañaActiva = 'activas';
+}
 
 
-  // Lista principal
+
+    
+    // Lista principal
   let filas = [
     {
       orden: '',
@@ -192,6 +234,13 @@ function agruparPorMes(filas) {
 
 
 </script>
+{#if estaLogueado}
+  <div style="text-align: right;">
+    Usuario: <strong>{usuario}</strong> ({rol})
+    <button on:click={logout} style="margin-left: 1rem;">Salir</button>
+  </div>
+{/if}
+
 
 <style>
   /* Tu CSS existente */
@@ -288,30 +337,30 @@ function agruparPorMes(filas) {
 }
 
 </style>
+{#if !estaLogueado}
+  <div style="text-align:center;">
+    <h2>Iniciar sesión</h2>
+    <input type="text" bind:value={usuario} placeholder="Nombre de usuario" />
+    <input type="password" bind:value={password} placeholder="Contraseña" style="margin-top:8px;" />
+    <button on:click={login}>Ingresar</button>
+  </div>
+{/if}
 
+{#if estaLogueado}
 <h1>Órdenes de Servicio</h1>
 
 <div class="tabs" style="text-align:center; margin-bottom:1rem;">
-  <button
-    class:active={pestañaActiva === 'activas'}
-    on:click={() => (pestañaActiva = 'activas')}
-    style="margin-right: 10px;"
-  >
-    Activas
-  </button>
-  <button
-    class:active={pestañaActiva === 'terminadas'}
-    on:click={() => (pestañaActiva = 'terminadas')}
-  >
-    Terminadas
-  </button>
-  <button
-    class:active={pestañaActiva === 'estadisticas'}
-    on:click={() => (pestañaActiva = 'estadisticas')}
-  >
-    Estadisticas
-  </button>
+  {#if rol === 'juan' ||rol === 'frank' || rol === 'rodrigo' ||rol === 'luis'}
+    <button class:active={pestañaActiva === 'activas'} on:click={() => (pestañaActiva = 'activas')} style="margin-right: 10px;">Activas</button>
+  {/if}
+  {#if rol === 'luis'}
+    <button class:active={pestañaActiva === 'terminadas'} on:click={() => (pestañaActiva = 'terminadas')}>Terminadas</button>
+  {/if}
+  {#if rol === 'eduardo' || rol === 'luis'}
+    <button class:active={pestañaActiva === 'estadisticas'} on:click={() => (pestañaActiva = 'estadisticas')}>Estadísticas</button>
+  {/if}
 </div>
+
 
 
 {#if pestañaActiva === 'activas'}
@@ -327,25 +376,38 @@ function agruparPorMes(filas) {
       </tr>
     </thead>
     <tbody>
-      {#each filas as fila, i}
+     {#each (rol === 'luis' ? filas : filas.filter(f => f.tecnico.toLowerCase() === usuario.toLowerCase())) as fila, i}
+
         <tr>
+          
           <td>
-            <input type="number" bind:value={fila.orden} />
-          </td>
+  {#if rol === 'luis'}
+    <input type="number" bind:value={fila.orden} />
+    
+  {:else}
+    {fila.orden}
+  {/if}
+</td>
+
           <td>
-            <input
-              type="date"
-              bind:value={fila.fechaIngreso}
-              on:change={() => actualizarFecha(i)}
-            />
-          </td>
+    {#if rol === 'luis' || rol === 'tecnico'}
+      <input type="date" bind:value={fila.fechaIngreso} on:change={() => actualizarFecha(i)} />
+    {:else}
+      {fila.fechaIngreso}
+    {/if}
+  </td>
+
           <td>
+            {#if rol === 'luis' || rol === 'tecnico'}
             <select bind:value={fila.tecnico}>
               <option>Sin asignar</option>
               <option>Juan</option>
               <option>Frank</option>
               <option>Rodrigo</option>
             </select>
+            {:else}
+              {fila.tecnico}
+            {/if}
           </td>
           <td>
             <input type="number" min="1" bind:value={fila.cantidad} />
@@ -363,11 +425,16 @@ function agruparPorMes(filas) {
     </tbody>
   </table>
 
+  {#if rol === 'luis'}
   <div style="text-align: center;">
     <button on:click={agregarFila}>Agregar fila</button>
     <button on:click={eliminarFila}>Eliminar fila</button>
     <button on:click={terminarFila}>Mover terminados</button>
   </div>
+{/if}
+
+
+
 {:else if pestañaActiva === 'terminadas'}
   <table>
     <thead>
@@ -470,11 +537,9 @@ function agruparPorMes(filas) {
 
 
 
+ {#if rol === 'luis'}
+  <button on:click={eliminarTodo} class="boton-eliminar-todo">Eliminar todos los datos</button>
+{/if}
   </div>
-<button on:click={eliminarTodo} class="boton-eliminar-todo">
-  Eliminar todos los datos
-</button>
-
-
-
+{/if} <!-- Cierre del bloque {#if pestañaActiva === 'estadisticas'} -->
 {/if}
