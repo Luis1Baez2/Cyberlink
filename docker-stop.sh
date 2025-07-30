@@ -3,6 +3,6 @@
 echo "Stopping CyberLink..."
 
 # Stop and remove containers
-docker-compose down
+docker compose down
 
 echo "CyberLink has been stopped."

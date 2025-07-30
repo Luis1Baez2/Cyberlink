@@ -13,10 +13,10 @@ fi
 mkdir -p data uploads backups
 
 # Start services
-docker-compose up -d
+docker compose up -d
 
 echo "CyberLink is starting..."
 echo "Application will be available at http://localhost:5051"
 echo ""
-echo "To view logs: docker-compose logs -f"
-echo "To stop: docker-compose down"
+echo "To view logs: docker compose logs -f"
+echo "To stop: docker compose down"

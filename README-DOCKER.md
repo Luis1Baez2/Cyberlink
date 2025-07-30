@@ -26,7 +26,7 @@
    ```
    O manualmente:
    ```bash
-   docker-compose up -d
+   docker compose up -d
    ```
 
 ## Acceso a la Aplicación
@@ -43,19 +43,19 @@
 
 ### Ver logs
 ```bash
-docker-compose logs -f
+docker compose logs -f
 ```
 
 ### Detener la aplicación
 ```bash
 ./docker-stop.sh
 # o
-docker-compose down
+docker compose down
 ```
 
 ### Reiniciar la aplicación
 ```bash
-docker-compose restart
+docker compose restart
 ```
 
 ### Acceder al contenedor
@@ -81,7 +81,7 @@ Para usar en producción:
 
 1. **Usar docker-compose.prod.yml**
    ```bash
-   docker-compose -f docker-compose.prod.yml up -d
+   docker compose -f docker-compose.prod.yml up -d
    ```
 
 2. **Configurar variables de entorno de producción**
@@ -108,13 +108,13 @@ Los backups automáticos se ejecutan diariamente:
 ## Solución de Problemas
 
 ### La aplicación no inicia
-1. Verificar logs: `docker-compose logs app`
+1. Verificar logs: `docker compose logs app`
 2. Asegurarse de que el puerto 3000 no esté en uso
 3. Verificar permisos en las carpetas de volúmenes
 
 ### Error de base de datos
 1. Verificar que la carpeta `./data` existe y tiene permisos
-2. Ejecutar: `docker-compose run app npx prisma db push`
+2. Ejecutar: `docker compose run app npx prisma db push`
 
 ### Problemas de permisos
 ```bash
