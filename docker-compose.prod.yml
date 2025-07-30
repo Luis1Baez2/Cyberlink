@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: cyberlink-app
+    ports:
+      - "5051:3000"  # Map to port 5051
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=file:/app/data/cyberlink.db
+      - JWT_SECRET=${JWT_SECRET}
+      - ORIGIN=${ORIGIN:-http://localhost}
+    volumes:
+      - ./data:/app/data
+      - ./uploads:/app/uploads
+    restart: always
+    networks:
+      - cyberlink-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); });"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  backup:
+    image: alpine:latest
+    container_name: cyberlink-backup
+    volumes:
+      - ./data:/data
+      - ./backups:/backups
+    environment:
+      - BACKUP_RETENTION_DAYS=30
+    command: >
+      sh -c "
+        while true; do
+          echo 'Creating backup...';
+          cp -f /data/cyberlink.db /backups/cyberlink-backup-$$(date +%Y%m%d-%H%M%S).db;
+          find /backups -name 'cyberlink-backup-*.db' -mtime +$${BACKUP_RETENTION_DAYS:-30} -delete;
+          echo 'Backup completed';
+          sleep 86400;
+        done
+      "
+    restart: always
+    networks:
+      - cyberlink-network
+
+networks:
+  cyberlink-network:
+    driver: bridge
