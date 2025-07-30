@@ -1,38 +1,87 @@
-# sv
+# ProManager - Sistema de Gestión de Reparaciones
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+ProManager es un sistema web completo para la gestión de reparaciones de dispositivos electrónicos, control de inventario y métricas de rendimiento.
 
-## Creating a project
+## Características
 
-If you're seeing this, you've probably already done this step. Congrats!
+- **Gestión de Reparaciones**: Control completo del ciclo de vida de las reparaciones
+- **Control de Inventario**: Gestión de productos, stock y ventas
+- **Sistema de Métricas**: Evaluación de rendimiento de técnicos con metas diarias, semanales y mensuales
+- **Gestión de Usuarios**: Sistema de roles (Admin, Manager, Employee, Technician)
+- **Diseño Elegante**: Interfaz moderna con glassmorphism y transiciones suaves
 
+## Tecnologías
+
+- **Framework**: SvelteKit
+- **Base de Datos**: SQLite con Prisma ORM
+- **Estilos**: Tailwind CSS
+- **Autenticación**: Sistema personalizado con cookies
+- **TypeScript**: Para mayor seguridad de tipos
+
+## Instalación
+
+1. Clonar el repositorio
 ```bash
-# create a new project in the current directory
-npx sv create
-
-# create a new project in my-app
-npx sv create my-app
+git clone [url-del-repositorio]
+cd promanager-web
 ```
 
-## Developing
+2. Instalar dependencias
+```bash
+npm install
+```
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+3. Configurar la base de datos
+```bash
+npx prisma generate
+npx prisma db push
+```
 
+4. (Opcional) Sembrar datos de prueba
+```bash
+npm run seed
+```
+
+5. Iniciar el servidor de desarrollo
 ```bash
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
 
-## Building
+## Usuarios por defecto
 
-To create a production version of your app:
+- **Dueño**: usuario: `dueño`, contraseña: `admin123`
+- **Admin**: usuario: `admin`, contraseña: `admin123`
+- **Técnico**: usuario: `rodrigo`, contraseña: `tech123`
 
-```bash
-npm run build
+## Scripts disponibles
+
+- `npm run dev` - Iniciar servidor de desarrollo
+- `npm run build` - Construir para producción
+- `npm run preview` - Vista previa de la build
+- `npm run seed` - Sembrar datos de prueba
+- `npm run check-db` - Verificar conexión a base de datos
+
+## Estructura del proyecto
+
+```
+promanager-web/
+├── prisma/              # Esquema y migraciones de base de datos
+├── src/
+│   ├── lib/            # Utilidades y componentes compartidos
+│   ├── routes/         # Páginas y rutas de la aplicación
+│   └── app.css        # Estilos globales
+├── static/            # Archivos estáticos
+└── scripts/           # Scripts de utilidad
 ```
 
-You can preview the production build with `npm run preview`.
+## Métricas y Evaluación
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+El sistema evalúa a los técnicos basándose en:
+- Reparaciones completadas vs meta mensual
+- Tiempo promedio de reparación
+- Ingresos generados
+- Adaptación automática para técnicos de medio turno
+
+## Licencia
+
+Proyecto privado - Todos los derechos reservados

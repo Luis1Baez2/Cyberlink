@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProManager - Test Directo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: bold;
+        }
+        select, input, button {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .info {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        .debug {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #666;
+        }
+        .test-btn {
+            background: #28a745;
+        }
+        .test-btn:hover {
+            background: #1e7e34;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 ProManager - Test Directo</h1>
+        
+        <div class="info">
+            ✅ <strong>HTML puro sin frameworks</strong><br>
+            ✅ <strong>Sin dependencias de Svelte</strong><br>
+            ✅ <strong>Envío directo al servidor</strong>
+        </div>
+
+        <form id="loginForm" method="POST" action="/simple-login">
+            <div class="form-group">
+                <label for="username">👤 Usuario:</label>
+                <select name="username" id="username" required>
+                    <option value="">-- Seleccionar --</option>
+                    <option value="dueño">🏢 Dueño</option>
+                    <option value="admin">👨‍💼 Admin</option>
+                    <option value="juan">🔧 Juan</option>
+                    <option value="rodrigo">🔧 Rodrigo</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="password">🔑 Contraseña:</label>
+                <input type="password" name="password" id="password" value="1234" required>
+            </div>
+
+            <button type="submit">🚀 ENTRAR</button>
+        </form>
+
+        <button class="test-btn" onclick="testLogin()">🧪 Auto-Test (Dueño + 1234)</button>
+
+        <div class="debug">
+            <strong>📊 Debug Info:</strong><br>
+            🌐 <span id="url-info"></span><br>
+            📱 <span id="device-info"></span><br>
+            ⏰ <span id="time-info"></span><br><br>
+            
+            <strong>🔧 Datos:</strong><br>
+            🔑 Contraseña: 1234 (todos los usuarios)<br>
+            📍 Action: /simple-login<br>
+            🎯 Method: POST
+        </div>
+
+        <div id="status" style="margin-top: 20px;"></div>
+    </div>
+
+    <script>
+        // Llenar info de debug
+        document.getElementById('url-info').textContent = window.location.href;
+        document.getElementById('device-info').textContent = navigator.userAgent.substring(0, 50) + '...';
+        document.getElementById('time-info').textContent = new Date().toLocaleString();
+
+        // Función de test automático
+        function testLogin() {
+            document.getElementById('username').value = 'dueño';
+            document.getElementById('password').value = '1234';
+            
+            // Mostrar que se está enviando
+            document.getElementById('status').innerHTML = '<div style="background: #fff3cd; padding: 10px; border-radius: 5px; color: #856404;">🔄 Enviando login...</div>';
+            
+            setTimeout(() => {
+                document.getElementById('loginForm').submit();
+            }, 1000);
+        }
+
+        // Log del formulario
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            console.log('=== ENVIANDO LOGIN ===');
+            console.log('Usuario:', document.getElementById('username').value);
+            console.log('Contraseña:', document.getElementById('password').value);
+            console.log('Action:', this.action);
+            console.log('Method:', this.method);
+            console.log('Timestamp:', new Date().toISOString());
+            
+            document.getElementById('status').innerHTML = '<div style="background: #d1ecf1; padding: 10px; border-radius: 5px; color: #0c5460;">📤 Formulario enviado...</div>';
+        });
+
+        // Debug inicial
+        console.log('=== PROMANAGER TEST DIRECTO ===');
+        console.log('URL:', window.location.href);
+        console.log('Timestamp:', new Date().toISOString());
+        console.log('Ready para test');
+    </script>
+</body>
+</html>
