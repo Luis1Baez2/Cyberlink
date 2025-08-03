@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { enhance } from '$app/forms';
+	import { onMount } from 'svelte';
 	
 	export let data;
 	export let form;
@@ -37,6 +38,33 @@
 	let selectedBrand = '';
 	let customBrand = '';
 	
+	// Notas predefinidas
+	let predefinedNotes = [
+		'Equipo recibido con contraseña: ',
+		'Cliente solicita presupuesto antes de proceder',
+		'Equipo recibido sin cargador',
+		'Equipo recibido con cargador',
+		'Cliente necesita urgente',
+		'Respaldar información antes de formatear',
+		'Cliente autoriza formateo si es necesario',
+		'Equipo con golpes visibles',
+		'Pantalla rota/dañada',
+		'Teclado con teclas que no funcionan'
+	];
+	
+	// Notas seleccionadas
+	let selectedNotes = [];
+	let showNotesModal = false;
+	let activeTab = 'notes';
+	
+	// Términos y condiciones editables
+	let termsAndConditions = [
+		'El diagnóstico puede modificar el presupuesto inicial',
+		'Equipos no reclamados después de 30 días no serán responsabilidad del taller',
+		'Garantía de reparación: 30 días',
+		'Conserve este comprobante para retirar su equipo'
+	];
+	
 	// Buscar clientes existentes
 	$: filteredCustomers = data.customers.filter(customer => 
 		customer.name.toLowerCase().includes(customerSearchTerm.toLowerCase()) ||
@@ -55,11 +83,83 @@
 		customerSearchTerm = '';
 		showNewCustomerForm = false;
 	}
+	
+	// Funciones para manejar notas
+	function toggleNote(note) {
+		const index = selectedNotes.indexOf(note);
+		if (index === -1) {
+			selectedNotes = [...selectedNotes, note];
+		} else {
+			selectedNotes = selectedNotes.filter((_, i) => i !== index);
+		}
+	}
+	
+	// Eliminar nota predefinida
+	function removeNote(index) {
+		// Primero obtener la nota antes de eliminarla
+		const noteToRemove = predefinedNotes[index];
+		// Eliminar la nota del array
+		predefinedNotes = predefinedNotes.filter((_, i) => i !== index);
+		// También eliminar de las seleccionadas si estaba seleccionada
+		selectedNotes = selectedNotes.filter(n => n !== noteToRemove);
+	}
+	
+	// Agregar nueva nota predefinida
+	function addNote() {
+		predefinedNotes = [...predefinedNotes, ''];
+	}
+	
+	function applyNotes() {
+		const allNotes = [...selectedNotes];
+		// Actualizar el campo de notas con todas las notas seleccionadas
+		const notesTextarea = document.getElementById('notes');
+		if (notesTextarea) {
+			notesTextarea.value = allNotes.join('\n');
+		}
+		// Guardar términos y condiciones actualizados
+		saveTermsAndConditions();
+		showNotesModal = false;
+	}
+	
+	
+	// Funciones para manejar términos y condiciones
+	function addTerm() {
+		termsAndConditions = [...termsAndConditions, ''];
+	}
+	
+	function removeTerm(index) {
+		termsAndConditions = termsAndConditions.filter((_, i) => i !== index);
+	}
+	
+	function saveTermsAndConditions() {
+		// Guardar en localStorage para persistir los cambios
+		localStorage.setItem('termsAndConditions', JSON.stringify(termsAndConditions));
+		localStorage.setItem('predefinedNotes', JSON.stringify(predefinedNotes));
+	}
+	
+	// Cargar términos y notas guardadas al iniciar
+	onMount(() => {
+		const savedTerms = localStorage.getItem('termsAndConditions');
+		const savedNotes = localStorage.getItem('predefinedNotes');
+		
+		if (savedTerms) {
+			termsAndConditions = JSON.parse(savedTerms);
+		}
+		if (savedNotes) {
+			predefinedNotes = JSON.parse(savedNotes);
+		}
+	});
 </script>
 
 <div class="min-h-screen bg-gray-50">
-	<!-- Header con gradiente -->
-	<div class="bg-gradient-to-r from-purple-600 to-green-600 pb-32">
+	<!-- Header con gradiente suave lila a verde -->
+	<div class="relative overflow-hidden">
+		<!-- Gradiente de fondo con transición más suave y un poco más oscuro -->
+		<div class="absolute inset-0 bg-gradient-to-br from-purple-500 via-purple-400 to-emerald-400"></div>
+		<div class="absolute inset-0 bg-gradient-to-t from-transparent via-white/5 to-white/15"></div>
+		
+		<!-- Contenido del header -->
+		<div class="relative pb-32">
 		<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 			<div class="flex items-center justify-between">
 				<div class="flex items-center space-x-4">
@@ -79,6 +179,14 @@
 					</div>
 				</div>
 			</div>
+		</div>
+		</div>
+		
+		<!-- Curva suave y orgánica en la parte inferior -->
+		<div class="absolute bottom-0 left-0 right-0">
+			<svg class="w-full h-16 sm:h-24" viewBox="0 0 1200 120" preserveAspectRatio="none">
+				<path d="M0,40 Q300,0 600,40 T1200,40 L1200,120 L0,120 Z" fill="currentColor" class="text-gray-50 dark:text-gray-900" />
+			</svg>
 		</div>
 	</div>
 
@@ -373,9 +481,21 @@
 						</div>
 						
 						<div class="mt-4">
-							<label for="notes" class="block text-sm font-medium text-gray-700">
-								Notas adicionales
-							</label>
+							<div class="flex items-center justify-between mb-2">
+								<label for="notes" class="block text-sm font-medium text-gray-700">
+									Notas adicionales
+								</label>
+								<button
+									type="button"
+									on:click={() => showNotesModal = true}
+									class="inline-flex items-center px-3 py-1 border border-purple-300 text-sm font-medium rounded-md text-purple-700 bg-purple-50 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+								>
+									<svg class="-ml-0.5 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+									</svg>
+									Editar impresión y notas
+								</button>
+							</div>
 							<textarea
 								name="notes"
 								id="notes"
@@ -415,3 +535,131 @@
 		showCustomerDropdown = false;
 	}
 }} />
+
+<!-- Modal de selección de notas -->
+{#if showNotesModal}
+<div class="fixed z-50 inset-0 overflow-y-auto">
+	<div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+		<div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" on:click={() => showNotesModal = false}></div>
+
+		<div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+			<div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+				<h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+					Editar Impresión y Notas
+				</h3>
+				
+				<!-- Tabs para separar secciones -->
+				<div class="border-b border-gray-200 mb-4">
+					<nav class="-mb-px flex space-x-8">
+						<button
+							type="button"
+							class="border-b-2 {activeTab === 'notes' ? 'border-purple-500 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} py-2 px-1 text-sm font-medium"
+							on:click={() => activeTab = 'notes'}
+						>
+							Notas Predefinidas
+						</button>
+						<button
+							type="button"
+							class="border-b-2 {activeTab === 'terms' ? 'border-purple-500 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} py-2 px-1 text-sm font-medium"
+							on:click={() => activeTab = 'terms'}
+						>
+							Términos y Condiciones
+						</button>
+					</nav>
+				</div>
+				
+				{#if activeTab === 'notes'}
+					<div class="space-y-4">
+						<p class="text-sm text-gray-600 mb-4">
+							Las notas seleccionadas aparecerán en el campo de notas de la orden de servicio. También se mostrarán en la impresión.
+						</p>
+						
+						<div class="space-y-2 max-h-64 overflow-y-auto">
+							{#each predefinedNotes as note, index}
+							<div class="flex items-center space-x-2">
+								<input
+									type="checkbox"
+									checked={selectedNotes.includes(note)}
+									on:change={() => toggleNote(note)}
+									class="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+								/>
+								<input
+									type="text"
+									bind:value={predefinedNotes[index]}
+									placeholder="Ingrese nota..."
+									class="flex-1 border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500"
+								/>
+								<button
+									type="button"
+									on:click={() => removeNote(index)}
+									class="px-3 py-2 bg-red-100 text-red-700 rounded-md hover:bg-red-200 text-sm"
+								>
+									Eliminar
+								</button>
+							</div>
+							{/each}
+						</div>
+						
+						<button
+							type="button"
+							on:click={addNote}
+							class="mt-2 text-sm text-purple-600 hover:text-purple-700 font-medium"
+						>
+							+ Agregar nueva nota
+						</button>
+					</div>
+				{:else}
+					<div class="space-y-4">
+						<p class="text-sm text-gray-600 mb-4">
+							Estos términos y condiciones aparecerán en la impresión de la orden de servicio.
+						</p>
+						
+						{#each termsAndConditions as term, index}
+							<div class="flex items-center space-x-2">
+								<input
+									type="text"
+									bind:value={termsAndConditions[index]}
+									placeholder="Ingrese término o condición..."
+									class="flex-1 border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500"
+								/>
+								<button
+									type="button"
+									on:click={() => removeTerm(index)}
+									class="px-3 py-2 bg-red-100 text-red-700 rounded-md hover:bg-red-200 text-sm"
+								>
+									Eliminar
+								</button>
+							</div>
+						{/each}
+						
+						<button
+							type="button"
+							on:click={addTerm}
+							class="mt-2 text-sm text-purple-600 hover:text-purple-700 font-medium"
+						>
+							+ Agregar término o condición
+						</button>
+					</div>
+				{/if}
+			</div>
+			
+			<div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+				<button
+					type="button"
+					on:click={applyNotes}
+					class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-purple-600 text-base font-medium text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 sm:ml-3 sm:w-auto sm:text-sm"
+				>
+					Aplicar Notas
+				</button>
+				<button
+					type="button"
+					on:click={() => showNotesModal = false}
+					class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+				>
+					Cancelar
+				</button>
+			</div>
+		</div>
+	</div>
+</div>
+{/if}

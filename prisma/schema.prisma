@@ -123,6 +123,9 @@ model Repair {
   estimatedArrival DateTime?
   laborCost     Float?
   partsCost     Float?
+  workPerformed String?
+  finalObservations String?
+  cancellationReason String?
   notes         Note[]
   technician    User?                 @relation(fields: [technicianId], references: [id])
   customer      Customer              @relation(fields: [customerId], references: [id])

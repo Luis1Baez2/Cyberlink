@@ -51,27 +51,30 @@
 	}
 </script>
 
-<div class="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50">
-	<!-- Header -->
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+	<!-- Header con gradiente mejorado -->
 	<div class="relative overflow-hidden">
-		<div class="absolute inset-0 bg-gradient-to-br from-orange-400 via-yellow-500 to-orange-400"></div>
-		<div class="absolute inset-0 bg-black/10 backdrop-blur-3xl"></div>
+		<!-- Gradiente de fondo con transición más suave y un poco más oscuro -->
+		<div class="absolute inset-0 bg-gradient-to-br from-purple-500 via-purple-400 to-emerald-400"></div>
+		<div class="absolute inset-0 bg-gradient-to-t from-transparent via-white/5 to-white/15"></div>
 		
-		<div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-			<div in:fly={{ y: 20, duration: 600, delay: 100 }}>
-				<h1 class="text-4xl font-light text-white mb-2">
-					🛒 Gestión de Repuestos
-				</h1>
-				<p class="text-white/80 text-lg font-light">
-					Equipos esperando repuestos - Solo se muestran reparaciones en espera
-				</p>
+		<div class="relative z-10">
+			<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+				<div in:fly={{ y: 20, duration: 600, delay: 100 }}>
+					<h1 class="text-3xl sm:text-4xl font-light text-white mb-2">
+						🛒 Gestión de Repuestos
+					</h1>
+					<p class="text-white/80 text-lg font-light">
+						Equipos esperando repuestos - Solo se muestran reparaciones en espera
+					</p>
+				</div>
 			</div>
 		</div>
 		
-		<!-- Olas decorativas -->
+		<!-- Curva suave en la parte inferior -->
 		<div class="absolute bottom-0 left-0 right-0">
-			<svg viewBox="0 0 1440 120" class="w-full h-16">
-				<path fill="rgba(249, 250, 251, 1)" d="M0,64 C480,150 960,-20 1440,64 L1440,120 L0,120 Z" />
+			<svg class="w-full h-16 sm:h-24" viewBox="0 0 1200 120" preserveAspectRatio="none">
+				<path d="M0,40 Q300,0 600,40 T1200,40 L1200,120 L0,120 Z" fill="currentColor" class="text-gray-50 dark:text-gray-900" />
 			</svg>
 		</div>
 	</div>

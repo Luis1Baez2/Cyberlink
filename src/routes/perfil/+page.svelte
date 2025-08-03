@@ -32,44 +32,57 @@
 	}
 </script>
 
-<div class="min-h-screen bg-gray-50">
-	<!-- Header con gradiente -->
-	<div class="bg-gradient-to-r from-purple-600 to-green-600 pb-32">
-		<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-			<div class="sm:flex sm:items-center sm:justify-between">
-				<div>
-					<h1 class="text-3xl font-bold text-white">Mi Perfil</h1>
-					<p class="mt-2 text-purple-100">
-						Gestiona tu información personal y configuración de cuenta
-					</p>
-				</div>
-				<div class="mt-4 sm:mt-0">
-					<div class="flex items-center space-x-3">
-						<div class="h-16 w-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-2xl font-bold border-2 border-white/30">
-							{getInitials(data.user?.name || '')}
-						</div>
-						<div class="text-white">
-							<p class="text-lg font-semibold">{data.user?.name}</p>
-							<p class="text-sm text-purple-100">{data.roleTranslation}</p>
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+	<!-- Header con gradiente mejorado -->
+	<div class="relative overflow-hidden">
+		<!-- Gradiente de fondo con transición más suave y un poco más oscuro -->
+		<div class="absolute inset-0 bg-gradient-to-br from-purple-500 via-purple-400 to-emerald-400"></div>
+		<div class="absolute inset-0 bg-gradient-to-t from-transparent via-white/5 to-white/15"></div>
+		
+		<div class="relative z-10">
+			<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+				<div class="sm:flex sm:items-center sm:justify-between">
+					<div>
+						<h1 class="text-3xl sm:text-4xl font-light text-white mb-2">Mi Perfil</h1>
+						<p class="text-white/80 text-lg font-light">
+							Gestiona tu información personal y configuración de cuenta
+						</p>
+					</div>
+					<div class="mt-4 sm:mt-0">
+						<div class="flex items-center space-x-3">
+							<div class="h-16 w-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-2xl font-bold border-2 border-white/30">
+								{getInitials(data.user?.name || '')}
+							</div>
+							<div class="text-white">
+								<p class="text-lg font-semibold">{data.user?.name}</p>
+								<p class="text-sm text-white/80">{data.roleTranslation}</p>
+							</div>
 						</div>
 					</div>
 				</div>
 			</div>
 		</div>
+		
+		<!-- Curva suave en la parte inferior -->
+		<div class="absolute bottom-0 left-0 right-0">
+			<svg class="w-full h-16 sm:h-24" viewBox="0 0 1200 120" preserveAspectRatio="none">
+				<path d="M0,40 Q300,0 600,40 T1200,40 L1200,120 L0,120 Z" fill="currentColor" class="text-gray-50 dark:text-gray-900" />
+			</svg>
+		</div>
 	</div>
 
 	<!-- Contenido principal con margen negativo para superponer -->
-	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-24">
-		<div class="bg-white shadow-lg rounded-lg overflow-hidden">
+	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 relative z-10">
+		<div class="bg-white dark:bg-gray-800 shadow-lg rounded-2xl overflow-hidden">
 			
 			<!-- Tabs mejorados -->
-			<div class="border-b border-gray-200">
+			<div class="border-b border-gray-200 dark:border-gray-700">
 				<nav class="-mb-px flex">
 					<button
 						on:click={() => activeTab = 'info'}
 						class="group relative py-4 px-6 text-sm font-medium transition-all {activeTab === 'info' 
-							? 'text-purple-600' 
-							: 'text-gray-500 hover:text-gray-700'}"
+							? 'text-purple-600 dark:text-purple-400' 
+							: 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
 					>
 						<div class="flex items-center space-x-2">
 							<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -84,8 +97,8 @@
 					<button
 						on:click={() => activeTab = 'password'}
 						class="group relative py-4 px-6 text-sm font-medium transition-all {activeTab === 'password' 
-							? 'text-purple-600' 
-							: 'text-gray-500 hover:text-gray-700'}"
+							? 'text-purple-600 dark:text-purple-400' 
+							: 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
 					>
 						<div class="flex items-center space-x-2">
 							<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -106,22 +119,22 @@
 				<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 					<!-- Columna izquierda - Resumen -->
 					<div class="lg:col-span-1">
-						<div class="bg-gray-50 rounded-lg p-6">
-							<h3 class="text-lg font-semibold text-gray-900 mb-4">Resumen de cuenta</h3>
+						<div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+							<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Resumen de cuenta</h3>
 							<div class="space-y-4">
 								<div>
-									<p class="text-sm text-gray-500">Miembro desde</p>
-									<p class="text-sm font-medium text-gray-900">{new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+									<p class="text-sm text-gray-500 dark:text-gray-400">Miembro desde</p>
+									<p class="text-sm font-medium text-gray-900 dark:text-gray-100">{new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
 								</div>
 								<div>
-									<p class="text-sm text-gray-500">Último acceso</p>
-									<p class="text-sm font-medium text-gray-900">Hace unos momentos</p>
+									<p class="text-sm text-gray-500 dark:text-gray-400">Último acceso</p>
+									<p class="text-sm font-medium text-gray-900 dark:text-gray-100">Hace unos momentos</p>
 								</div>
 								<div>
-									<p class="text-sm text-gray-500">Estado de cuenta</p>
+									<p class="text-sm text-gray-500 dark:text-gray-400">Estado de cuenta</p>
 									<div class="flex items-center mt-1">
-										<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-											<svg class="-ml-0.5 mr-1.5 h-2 w-2 text-green-400" fill="currentColor" viewBox="0 0 8 8">
+										<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300">
+											<svg class="-ml-0.5 mr-1.5 h-2 w-2 text-green-400 dark:text-green-300" fill="currentColor" viewBox="0 0 8 8">
 												<circle cx="4" cy="4" r="3" />
 											</svg>
 											Activo

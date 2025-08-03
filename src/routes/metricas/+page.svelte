@@ -64,11 +64,11 @@
 	// Obtener color de evaluación
 	function getEvalColor(color: string): string {
 		const colors = {
-			red: 'text-red-600 bg-red-50',
-			orange: 'text-orange-600 bg-orange-50',
-			yellow: 'text-yellow-600 bg-yellow-50',
-			green: 'text-green-600 bg-green-50',
-			purple: 'text-purple-600 bg-purple-50'
+			red: 'text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-900/20',
+			orange: 'text-orange-600 bg-orange-50 dark:text-orange-400 dark:bg-orange-900/20',
+			yellow: 'text-yellow-600 bg-yellow-50 dark:text-yellow-400 dark:bg-yellow-900/20',
+			green: 'text-green-600 bg-green-50 dark:text-green-400 dark:bg-green-900/20',
+			purple: 'text-purple-600 bg-purple-50 dark:text-purple-400 dark:bg-purple-900/20'
 		};
 		return colors[color] || colors.green;
 	}
@@ -76,9 +76,9 @@
 	// Obtener color de alerta
 	function getAlertBorder(color: string): string {
 		const colors = {
-			red: 'border-red-200',
-			yellow: 'border-yellow-200',
-			green: 'border-green-200'
+			red: 'border-red-200 dark:border-red-700',
+			yellow: 'border-yellow-200 dark:border-yellow-700',
+			green: 'border-green-200 dark:border-green-700'
 		};
 		return colors[color] || colors.green;
 	}
@@ -93,16 +93,18 @@
 	}
 </script>
 
-<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-	<!-- Header elegante con glassmorphism -->
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+	<!-- Header con gradiente mejorado -->
 	<div class="relative overflow-hidden">
-		<div class="absolute inset-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600"></div>
-		<div class="absolute inset-0 bg-black/10 backdrop-blur-3xl"></div>
+		<!-- Gradiente de fondo con transición más suave y un poco más oscuro -->
+		<div class="absolute inset-0 bg-gradient-to-br from-purple-500 via-purple-400 to-emerald-400"></div>
+		<div class="absolute inset-0 bg-gradient-to-t from-transparent via-white/5 to-white/15"></div>
 		
-		<div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+		<div class="relative z-10">
+			<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
 			<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-				<div in:fly={{ y: 20, duration: 600, delay: 100 }}>
-					<h1 class="text-4xl font-light text-white mb-2">
+					<div in:fly={{ y: 20, duration: 600, delay: 100 }}>
+						<h1 class="text-3xl sm:text-4xl font-light text-white mb-2">
 						{#if data.isTechnician}
 							Mis Métricas
 						{:else}
@@ -149,12 +151,13 @@
 					</div>
 				</div>
 			</div>
+			</div>
 		</div>
 		
-		<!-- Olas decorativas -->
+		<!-- Curva suave en la parte inferior -->
 		<div class="absolute bottom-0 left-0 right-0">
-			<svg viewBox="0 0 1440 120" class="w-full h-16">
-				<path fill="rgba(249, 250, 251, 1)" d="M0,64 C480,150 960,-20 1440,64 L1440,120 L0,120 Z" />
+			<svg class="w-full h-16 sm:h-24" viewBox="0 0 1200 120" preserveAspectRatio="none">
+				<path d="M0,40 Q300,0 600,40 T1200,40 L1200,120 L0,120 Z" fill="currentColor" class="text-gray-50 dark:text-gray-900" />
 			</svg>
 		</div>
 	</div>
@@ -168,7 +171,7 @@
 		<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
 			<!-- Evaluación con diseño moderno -->
 			<div in:scale={{ duration: 500, delay: 300 }} 
-				class="bg-white rounded-3xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-500">
+				class="bg-white dark:bg-gray-800 rounded-3xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-500">
 				<div class="bg-gradient-to-br {getEvalGradient(data.evaluation.color)} p-8 text-white">
 					<h3 class="text-xl font-light mb-6 opacity-90">
 						Evaluación {data.isCurrentMonth ? 'Actual' : `de ${months[data.selectedMonth - 1].label}`}
@@ -192,34 +195,34 @@
 			
 			<!-- Estado de cumplimiento -->
 			<div in:scale={{ duration: 500, delay: 400 }} 
-				class="bg-white rounded-3xl shadow-xl p-8 hover:shadow-2xl transition-all duration-500">
-				<h3 class="text-xl font-light text-gray-700 mb-6">Estado de Cumplimiento</h3>
+				class="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 hover:shadow-2xl transition-all duration-500">
+				<h3 class="text-xl font-light text-gray-700 dark:text-gray-300 mb-6">Estado de Cumplimiento</h3>
 				{#if data.isCurrentMonth}
 				<div class="space-y-4">
-					<div class="flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r {getAlertBorder(data.alertStatus.color)} {data.alertStatus.color === 'green' ? 'from-green-50 to-emerald-50' : data.alertStatus.color === 'yellow' ? 'from-yellow-50 to-amber-50' : 'from-red-50 to-rose-50'}">
-						<span class="font-medium text-gray-800">{data.alertStatus.message}</span>
+					<div class="flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r {getAlertBorder(data.alertStatus.color)} {data.alertStatus.color === 'green' ? 'from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20' : data.alertStatus.color === 'yellow' ? 'from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20' : 'from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20'}">
+						<span class="font-medium text-gray-800 dark:text-gray-200">{data.alertStatus.message}</span>
 						{#if data.alertStatus.status === 'urgent'}
 							<span class="text-2xl animate-pulse">⚡</span>
 						{/if}
 					</div>
-					<div class="bg-gray-50 rounded-2xl p-6">
+					<div class="bg-gray-50 dark:bg-gray-700 rounded-2xl p-6">
 						<div class="flex items-center justify-between mb-4">
-							<span class="text-gray-600">Progreso del mes</span>
-							<span class="text-2xl font-light text-gray-900">{data.workDaysElapsed}/{data.workDaysInPeriod}</span>
+							<span class="text-gray-600 dark:text-gray-400">Progreso del mes</span>
+							<span class="text-2xl font-light text-gray-900 dark:text-gray-100">{data.workDaysElapsed}/{data.workDaysInPeriod}</span>
 						</div>
-						<div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+						<div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3 overflow-hidden">
 							<div class="h-full bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full transition-all duration-1000"
 								style="width: {(data.workDaysElapsed / data.workDaysInPeriod) * 100}%">
 							</div>
 						</div>
-						<p class="text-sm text-gray-500 mt-2">Quedan {data.daysLeft} días laborables</p>
+						<p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Quedan {data.daysLeft} días laborables</p>
 					</div>
 				</div>
 				{:else}
 				<div class="flex flex-col items-center justify-center h-full py-8">
 					<div class="text-6xl mb-4">📊</div>
-					<span class="text-xl text-gray-600">Periodo finalizado</span>
-					<p class="text-gray-500 mt-2">Total: {data.workDaysInPeriod} días laborables</p>
+					<span class="text-xl text-gray-600 dark:text-gray-400">Periodo finalizado</span>
+					<p class="text-gray-500 dark:text-gray-400 mt-2">Total: {data.workDaysInPeriod} días laborables</p>
 				</div>
 				{/if}
 			</div>
@@ -227,13 +230,13 @@
 		
 		<!-- Panel de metas con diseño moderno -->
 		<div in:fly={{ y: 20, duration: 600, delay: 500 }} 
-			class="bg-white rounded-3xl shadow-xl p-8 hover:shadow-2xl transition-all duration-500">
+			class="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 hover:shadow-2xl transition-all duration-500">
 			<div class="flex items-center justify-between mb-8">
-				<h2 class="text-2xl font-light text-gray-800">
+				<h2 class="text-2xl font-light text-gray-800 dark:text-gray-200">
 					Progreso de Metas
 				</h2>
 				<div class="flex items-center space-x-2">
-					<span class="px-4 py-2 rounded-full text-sm font-medium {data.isHalfTime ? 'bg-orange-100 text-orange-700' : 'bg-indigo-100 text-indigo-700'}">
+					<span class="px-4 py-2 rounded-full text-sm font-medium {data.isHalfTime ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300' : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300'}">
 						{data.isHalfTime ? 'Medio Turno' : 'Turno Completo'}
 					</span>
 				</div>
@@ -246,14 +249,14 @@
 					<div class="flex items-center justify-between mb-3">
 						<div class="flex items-center space-x-3">
 							<span class="text-2xl">{getProgressIcon(data.percentages.daily)}</span>
-							<h3 class="text-lg font-medium text-gray-700">Meta Diaria</h3>
+							<h3 class="text-lg font-medium text-gray-700 dark:text-gray-300">Meta Diaria</h3>
 						</div>
-						<span class="text-lg text-gray-600">
+						<span class="text-lg text-gray-600 dark:text-gray-400">
 							{formatNumber(data.currentProgress.daily)} / {formatNumber(data.dailyGoal)}
 						</span>
 					</div>
 					<div class="relative">
-						<div class="w-full bg-gray-100 rounded-full h-4 overflow-hidden">
+						<div class="w-full bg-gray-100 dark:bg-gray-600 rounded-full h-4 overflow-hidden">
 							<div class="h-full rounded-full transition-all duration-1000 ease-out relative overflow-hidden
 								{data.percentages.daily >= 100 ? 'bg-gradient-to-r from-green-400 to-emerald-500' : 
 								 data.percentages.daily >= 70 ? 'bg-gradient-to-r from-yellow-400 to-amber-500' : 
@@ -262,7 +265,7 @@
 								<div class="absolute inset-0 bg-white/20 animate-pulse"></div>
 							</div>
 						</div>
-						<span class="absolute -top-8 text-sm font-medium text-gray-700 transition-all duration-300"
+						<span class="absolute -top-8 text-sm font-medium text-gray-700 dark:text-gray-300 transition-all duration-300"
 							style="left: {Math.min(100, data.percentages.daily)}%">
 							{formatNumber(data.percentages.daily, 0)}%
 						</span>
@@ -274,14 +277,14 @@
 					<div class="flex items-center justify-between mb-3">
 						<div class="flex items-center space-x-3">
 							<span class="text-2xl">{getProgressIcon(data.percentages.weekly)}</span>
-							<h3 class="text-lg font-medium text-gray-700">Meta Semanal</h3>
+							<h3 class="text-lg font-medium text-gray-700 dark:text-gray-300">Meta Semanal</h3>
 						</div>
-						<span class="text-lg text-gray-600">
+						<span class="text-lg text-gray-600 dark:text-gray-400">
 							{formatNumber(data.currentProgress.weekly)} / {formatNumber(data.weeklyGoal)}
 						</span>
 					</div>
 					<div class="relative">
-						<div class="w-full bg-gray-100 rounded-full h-4 overflow-hidden">
+						<div class="w-full bg-gray-100 dark:bg-gray-600 rounded-full h-4 overflow-hidden">
 							<div class="h-full rounded-full transition-all duration-1000 ease-out relative overflow-hidden
 								{data.percentages.weekly >= 100 ? 'bg-gradient-to-r from-green-400 to-emerald-500' : 
 								 data.percentages.weekly >= 70 ? 'bg-gradient-to-r from-yellow-400 to-amber-500' : 
@@ -290,7 +293,7 @@
 								<div class="absolute inset-0 bg-white/20 animate-pulse"></div>
 							</div>
 						</div>
-						<span class="absolute -top-8 text-sm font-medium text-gray-700 transition-all duration-300"
+						<span class="absolute -top-8 text-sm font-medium text-gray-700 dark:text-gray-300 transition-all duration-300"
 							style="left: {Math.min(100, data.percentages.weekly)}%">
 							{formatNumber(data.percentages.weekly, 0)}%
 						</span>
@@ -303,14 +306,14 @@
 					<div class="flex items-center justify-between mb-3">
 						<div class="flex items-center space-x-3">
 							<span class="text-2xl">{getProgressIcon(data.percentages.monthly)}</span>
-							<h3 class="text-lg font-medium text-gray-700">Meta Mensual</h3>
+							<h3 class="text-lg font-medium text-gray-700 dark:text-gray-300">Meta Mensual</h3>
 						</div>
-						<span class="text-lg text-gray-600">
+						<span class="text-lg text-gray-600 dark:text-gray-400">
 							{formatNumber(data.currentProgress.monthly)} / {data.monthlyGoal}
 						</span>
 					</div>
 					<div class="relative">
-						<div class="w-full bg-gray-100 rounded-full h-4 overflow-hidden">
+						<div class="w-full bg-gray-100 dark:bg-gray-600 rounded-full h-4 overflow-hidden">
 							<div class="h-full rounded-full transition-all duration-1000 ease-out relative overflow-hidden
 								{data.percentages.monthly >= 100 ? 'bg-gradient-to-r from-green-400 to-emerald-500' : 
 								 data.percentages.monthly >= 70 ? 'bg-gradient-to-r from-yellow-400 to-amber-500' : 
@@ -319,43 +322,16 @@
 								<div class="absolute inset-0 bg-white/20 animate-pulse"></div>
 							</div>
 						</div>
-						<span class="absolute -top-8 text-sm font-medium text-gray-700 transition-all duration-300"
+						<span class="absolute -top-8 text-sm font-medium text-gray-700 dark:text-gray-300 transition-all duration-300"
 							style="left: {Math.min(100, data.percentages.monthly)}%">
 							{formatNumber(data.percentages.monthly, 0)}%
 						</span>
 					</div>
-					<p class="text-sm text-gray-500 mt-2">
+					<p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
 						Días trabajados: {data.workDaysElapsed}/{data.workDaysInPeriod}
 					</p>
 				</div>
 				
-				<!-- Meta de ingresos -->
-				<div class="group border-t pt-8">
-					<div class="flex items-center justify-between mb-3">
-						<div class="flex items-center space-x-3">
-							<span class="text-2xl">💰</span>
-							<h3 class="text-lg font-medium text-gray-700">Meta de Ingresos</h3>
-						</div>
-						<span class="text-lg font-medium text-gray-900">
-							{formatCurrency(data.currentProgress.revenue)}
-						</span>
-					</div>
-					<div class="relative">
-						<div class="w-full bg-gray-100 rounded-full h-4 overflow-hidden">
-							<div class="h-full bg-gradient-to-r from-purple-400 via-pink-500 to-indigo-500 rounded-full transition-all duration-1000 ease-out relative overflow-hidden"
-								style="width: {Math.min(100, (data.currentProgress.revenue / data.monthlyRevenueGoal) * 100)}%">
-								<div class="absolute inset-0 bg-white/30 animate-pulse"></div>
-							</div>
-						</div>
-						<span class="absolute -top-8 text-sm font-medium text-gray-700 transition-all duration-300"
-							style="left: {Math.min(100, (data.currentProgress.revenue / data.monthlyRevenueGoal) * 100)}%">
-							{formatNumber((data.currentProgress.revenue / data.monthlyRevenueGoal) * 100, 0)}%
-						</span>
-					</div>
-					<p class="text-sm text-gray-500 mt-2">
-						Objetivo: {formatCurrency(data.monthlyRevenueGoal)}
-					</p>
-				</div>
 			</div>
 		</div>
 		
@@ -366,21 +342,21 @@
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
 			<!-- Top Equipos -->
 			<div in:scale={{ duration: 500, delay: 300 }} 
-				class="bg-white rounded-3xl shadow-lg p-6 hover:shadow-xl transition-all duration-300">
+				class="bg-white dark:bg-gray-800 rounded-3xl shadow-lg p-6 hover:shadow-xl transition-all duration-300">
 				<div class="flex items-center justify-between mb-6">
-					<h3 class="text-lg font-medium text-gray-700">Top Equipos</h3>
+					<h3 class="text-lg font-medium text-gray-700 dark:text-gray-300">Top Equipos</h3>
 					<span class="text-3xl">🏆</span>
 				</div>
 				<div class="space-y-4">
 					{#each data.rankings.byCompleted.slice(0, 3) as tech, index}
-					<div class="flex items-center justify-between p-3 rounded-2xl hover:bg-gray-50 transition-colors duration-200">
+					<div class="flex items-center justify-between p-3 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200">
 						<div class="flex items-center space-x-3">
 							<span class="text-2xl">
 								{#if index === 0}🥇{:else if index === 1}🥈{:else}🥉{/if}
 							</span>
-							<span class="font-medium text-gray-700">{tech.name}</span>
+							<span class="font-medium text-gray-700 dark:text-gray-300">{tech.name}</span>
 						</div>
-						<span class="text-lg font-semibold text-gray-900">{tech.completed}</span>
+						<span class="text-lg font-semibold text-gray-900 dark:text-gray-100">{tech.completed}</span>
 					</div>
 					{/each}
 				</div>
@@ -388,19 +364,19 @@
 			
 			<!-- Top Cumplimiento -->
 			<div in:scale={{ duration: 500, delay: 400 }} 
-				class="bg-white rounded-3xl shadow-lg p-6 hover:shadow-xl transition-all duration-300">
+				class="bg-white dark:bg-gray-800 rounded-3xl shadow-lg p-6 hover:shadow-xl transition-all duration-300">
 				<div class="flex items-center justify-between mb-6">
-					<h3 class="text-lg font-medium text-gray-700">Top Cumplimiento</h3>
+					<h3 class="text-lg font-medium text-gray-700 dark:text-gray-300">Top Cumplimiento</h3>
 					<span class="text-3xl">📊</span>
 				</div>
 				<div class="space-y-4">
 					{#each data.rankings.byPercentage.slice(0, 3) as tech, index}
-					<div class="flex items-center justify-between p-3 rounded-2xl hover:bg-gray-50 transition-colors duration-200">
+					<div class="flex items-center justify-between p-3 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200">
 						<div class="flex items-center space-x-3">
 							<span class="text-2xl">
 								{#if index === 0}🥇{:else if index === 1}🥈{:else}🥉{/if}
 							</span>
-							<span class="font-medium text-gray-700">{tech.name}</span>
+							<span class="font-medium text-gray-700 dark:text-gray-300">{tech.name}</span>
 						</div>
 						<span class="text-lg font-semibold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
 							{formatNumber(tech.percentage, 0)}%
@@ -412,19 +388,19 @@
 			
 			<!-- Top Ingresos -->
 			<div in:scale={{ duration: 500, delay: 500 }} 
-				class="bg-white rounded-3xl shadow-lg p-6 hover:shadow-xl transition-all duration-300">
+				class="bg-white dark:bg-gray-800 rounded-3xl shadow-lg p-6 hover:shadow-xl transition-all duration-300">
 				<div class="flex items-center justify-between mb-6">
-					<h3 class="text-lg font-medium text-gray-700">Top Ingresos</h3>
+					<h3 class="text-lg font-medium text-gray-700 dark:text-gray-300">Top Ingresos</h3>
 					<span class="text-3xl">💰</span>
 				</div>
 				<div class="space-y-4">
 					{#each data.rankings.byRevenue.slice(0, 3) as tech, index}
-					<div class="flex items-center justify-between p-3 rounded-2xl hover:bg-gray-50 transition-colors duration-200">
+					<div class="flex items-center justify-between p-3 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200">
 						<div class="flex items-center space-x-3">
 							<span class="text-2xl">
 								{#if index === 0}🥇{:else if index === 1}🥈{:else}🥉{/if}
 							</span>
-							<span class="font-medium text-gray-700">{tech.name}</span>
+							<span class="font-medium text-gray-700 dark:text-gray-300">{tech.name}</span>
 						</div>
 						<span class="text-sm font-semibold text-green-600">
 							{formatCurrency(tech.revenue).split(',')[0]}
@@ -436,19 +412,19 @@
 			
 			<!-- Ranking General -->
 			<div in:scale={{ duration: 500, delay: 600 }} 
-				class="bg-white rounded-3xl shadow-lg p-6 hover:shadow-xl transition-all duration-300">
+				class="bg-white dark:bg-gray-800 rounded-3xl shadow-lg p-6 hover:shadow-xl transition-all duration-300">
 				<div class="flex items-center justify-between mb-6">
-					<h3 class="text-lg font-medium text-gray-700">Ranking General</h3>
+					<h3 class="text-lg font-medium text-gray-700 dark:text-gray-300">Ranking General</h3>
 					<span class="text-3xl">🌟</span>
 				</div>
 				<div class="space-y-4">
 					{#each data.rankings.overall.slice(0, 3) as tech, index}
-					<div class="flex items-center justify-between p-3 rounded-2xl hover:bg-gray-50 transition-colors duration-200">
+					<div class="flex items-center justify-between p-3 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200">
 						<div class="flex items-center space-x-3">
 							<span class="text-2xl">
 								{#if index === 0}🥇{:else if index === 1}🥈{:else}🥉{/if}
 							</span>
-							<span class="font-medium text-gray-700">{tech.name}</span>
+							<span class="font-medium text-gray-700 dark:text-gray-300">{tech.name}</span>
 						</div>
 						<div class="flex items-center space-x-1">
 							{#each Array(Math.min(5, Math.ceil(tech.rankingScore / 20))) as _}
@@ -463,35 +439,35 @@
 		
 		<!-- Tabla de técnicos con diseño elegante -->
 		<div in:fly={{ y: 20, duration: 600, delay: 700 }} 
-			class="bg-white rounded-3xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-500">
+			class="bg-white dark:bg-gray-800 rounded-3xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-500">
 			<div class="p-8">
-				<h2 class="text-2xl font-light text-gray-800 mb-6">Detalle de Técnicos</h2>
+				<h2 class="text-2xl font-light text-gray-800 dark:text-gray-200 mb-6">Detalle de Técnicos</h2>
 				<div class="overflow-x-auto">
 					<table class="w-full">
 						<thead>
-							<tr class="border-b border-gray-100">
-								<th class="text-left py-4 px-6 text-sm font-medium text-gray-600 uppercase tracking-wider">Técnico</th>
-								<th class="text-left py-4 px-6 text-sm font-medium text-gray-600 uppercase tracking-wider">Turno</th>
-								<th class="text-left py-4 px-6 text-sm font-medium text-gray-600 uppercase tracking-wider">Evaluación</th>
-								<th class="text-left py-4 px-6 text-sm font-medium text-gray-600 uppercase tracking-wider">Progreso</th>
-								<th class="text-left py-4 px-6 text-sm font-medium text-gray-600 uppercase tracking-wider">Tiempo Promedio</th>
-								<th class="text-left py-4 px-6 text-sm font-medium text-gray-600 uppercase tracking-wider">Ingresos</th>
+							<tr class="border-b border-gray-100 dark:border-gray-700">
+								<th class="text-left py-4 px-6 text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">Técnico</th>
+								<th class="text-left py-4 px-6 text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">Turno</th>
+								<th class="text-left py-4 px-6 text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">Evaluación</th>
+								<th class="text-left py-4 px-6 text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">Progreso</th>
+								<th class="text-left py-4 px-6 text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">Tiempo Promedio</th>
+								<th class="text-left py-4 px-6 text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">Ingresos</th>
 							</tr>
 						</thead>
-						<tbody class="divide-y divide-gray-50">
+						<tbody class="divide-y divide-gray-50 dark:divide-gray-700">
 							{#each data.technicianStats as tech}
-							<tr class="hover:bg-gray-50 transition-colors duration-200">
+							<tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200">
 								<td class="py-6 px-6">
 									<div class="flex items-center space-x-3">
 										<div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-medium">
 											{tech.name.charAt(0)}
 										</div>
-										<span class="font-medium text-gray-900">{tech.name}</span>
+										<span class="font-medium text-gray-900 dark:text-gray-100">{tech.name}</span>
 									</div>
 								</td>
 								<td class="py-6 px-6">
 									<span class="px-3 py-1 rounded-full text-xs font-medium
-										{tech.workShift === 'FULL_TIME' ? 'bg-indigo-100 text-indigo-700' : 'bg-orange-100 text-orange-700'}">
+										{tech.workShift === 'FULL_TIME' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300' : 'bg-orange-100 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300'}">
 										{tech.isHalfTime ? 'Medio' : 'Completo'}
 									</span>
 								</td>
@@ -505,9 +481,9 @@
 								</td>
 								<td class="py-6 px-6">
 									<div class="flex items-center space-x-3">
-										<span class="text-sm font-medium text-gray-700">{tech.completed}/{tech.monthlyGoal}</span>
+										<span class="text-sm font-medium text-gray-700 dark:text-gray-300">{tech.completed}/{tech.monthlyGoal}</span>
 										<div class="w-24">
-											<div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+											<div class="w-full bg-gray-100 dark:bg-gray-600 rounded-full h-2 overflow-hidden">
 												<div class="h-full rounded-full transition-all duration-500
 													{tech.percentage >= 100 ? 'bg-gradient-to-r from-green-400 to-emerald-500' : 
 													 tech.percentage >= 70 ? 'bg-gradient-to-r from-yellow-400 to-amber-500' : 
@@ -516,14 +492,14 @@
 												</div>
 											</div>
 										</div>
-										<span class="text-sm font-medium text-gray-600">{formatNumber(tech.percentage, 0)}%</span>
+										<span class="text-sm font-medium text-gray-600 dark:text-gray-400">{formatNumber(tech.percentage, 0)}%</span>
 									</div>
 								</td>
 								<td class="py-6 px-6">
-									<span class="text-sm text-gray-600">{formatNumber(tech.avgRepairTime, 1)} días</span>
+									<span class="text-sm text-gray-600 dark:text-gray-400">{formatNumber(tech.avgRepairTime, 1)} días</span>
 								</td>
 								<td class="py-6 px-6">
-									<span class="text-sm font-semibold text-gray-900">{formatCurrency(tech.revenue)}</span>
+									<span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{formatCurrency(tech.revenue)}</span>
 								</td>
 							</tr>
 							{/each}
@@ -536,28 +512,28 @@
 		<!-- Estadísticas de equipos por categoría -->
 		{#if data.deviceCategories && data.deviceCategories.length > 0}
 		<div in:fly={{ y: 20, duration: 600, delay: 750 }} 
-			class="bg-white rounded-3xl shadow-xl p-8 mb-8 hover:shadow-2xl transition-all duration-500 mt-8">
+			class="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 mb-8 hover:shadow-2xl transition-all duration-500 mt-8">
 			<div class="flex items-center justify-between mb-6">
-				<h2 class="text-2xl font-light text-gray-800">Equipos por Categoría</h2>
+				<h2 class="text-2xl font-light text-gray-800 dark:text-gray-200">Equipos por Categoría</h2>
 				<span class="text-3xl">📱</span>
 			</div>
 			
 			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 				{#each data.deviceCategories as category}
-				<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 hover:shadow-lg transition-all duration-300">
+				<div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 rounded-2xl p-6 hover:shadow-lg transition-all duration-300">
 					<div class="flex items-center justify-between mb-4">
-						<h3 class="text-lg font-medium text-gray-700">{category.type}</h3>
+						<h3 class="text-lg font-medium text-gray-700 dark:text-gray-300">{category.type}</h3>
 						<div class="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-300 rounded-full flex items-center justify-center text-white font-bold shadow-md">
 							{category.count}
 						</div>
 					</div>
 					<div class="space-y-2">
-						<div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+						<div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3 overflow-hidden">
 							<div class="h-full bg-gradient-to-r from-purple-400 to-purple-500 rounded-full transition-all duration-1000"
 								style="width: {category.percentage}%">
 							</div>
 						</div>
-						<p class="text-sm text-gray-600">
+						<p class="text-sm text-gray-600 dark:text-gray-400">
 							{formatNumber(category.percentage, 1)}% del total
 						</p>
 					</div>
@@ -565,10 +541,10 @@
 				{/each}
 			</div>
 			
-			<div class="mt-6 pt-6 border-t border-gray-200">
+			<div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-600">
 				<div class="flex items-center justify-between">
-					<p class="text-gray-600">Total de equipos en el período</p>
-					<p class="text-2xl font-semibold text-gray-900">{data.totalRepairs}</p>
+					<p class="text-gray-600 dark:text-gray-400">Total de equipos en el período</p>
+					<p class="text-2xl font-semibold text-gray-900 dark:text-gray-100">{data.totalRepairs}</p>
 				</div>
 			</div>
 		</div>

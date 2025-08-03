@@ -1,9 +1,25 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { page } from '$app/stores';
 	
 	export let data;
-	
 	const repair = data.repair;
+	
+	// Términos y condiciones - cargar desde localStorage si existen
+	let termsAndConditions = [
+		'El diagnóstico puede modificar el presupuesto inicial',
+		'Equipos no reclamados después de 30 días no serán responsabilidad del taller',
+		'Garantía de reparación: 30 días',
+		'Conserve este comprobante para retirar su equipo'
+	];
+	
+	// Configuración de impresión
+	let printSettings = {
+		showLogo: true,
+		showDate: true,
+		showTerms: true,
+		copiesCount: 2
+	};
 	
 	// Función para formatear fecha
 	function formatDate(date: Date | string | null): string {
@@ -16,383 +32,508 @@
 		});
 	}
 	
-	// Función para formatear hora
-	function formatTime(date: Date | string): string {
-		const d = typeof date === 'string' ? new Date(date) : date;
-		return d.toLocaleTimeString('es-ES', {
-			hour: '2-digit',
-			minute: '2-digit'
-		});
-	}
+	// Determinar si es recibo de salida
+	$: isExitReceipt = repair.status === 'RETIRADO' || repair.status === 'COMPLETED' || repair.status === 'CANCELLED';
+	$: receiptTitle = isExitReceipt ? 'RECIBO DE SALIDA' : 'ORDEN DE SERVICIO';
 	
-	// Imprimir automáticamente al cargar
+	// Imprimir
 	onMount(() => {
+		// Debug para ver qué datos están llegando
+		console.log('Repair data:', repair);
+		console.log('Status:', repair.status);
+		console.log('Work performed:', repair.workPerformed);
+		console.log('Final observations:', repair.finalObservations);
+		console.log('Is exit receipt?', isExitReceipt);
+		
+		// Cargar términos y condiciones desde localStorage
+		const savedTerms = localStorage.getItem('termsAndConditions');
+		if (savedTerms) {
+			try {
+				const parsed = JSON.parse(savedTerms);
+				// Los términos y condiciones siempre se muestran todos
+				if (Array.isArray(parsed) && parsed.length > 0) {
+					if (typeof parsed[0] === 'object') {
+						// Si vienen como objetos, extraer solo el texto
+						termsAndConditions = parsed.map(term => term.text || term);
+					} else {
+						termsAndConditions = parsed;
+					}
+				}
+			} catch (e) {
+				console.error('Error cargando términos y condiciones:', e);
+			}
+		}
+		
+		// Cargar configuración de impresión
+		const savedPrintSettings = localStorage.getItem('printSettings');
+		if (savedPrintSettings) {
+			try {
+				printSettings = { ...printSettings, ...JSON.parse(savedPrintSettings) };
+			} catch (e) {
+				console.error('Error cargando configuración de impresión:', e);
+			}
+		}
+		
 		setTimeout(() => {
 			window.print();
 		}, 500);
 	});
 </script>
 
-<svelte:head>
-	<title>Orden de Reparación - {repair.repairNumber}</title>
-	<style>
-		/* Resetear estilos globales para la página de impresión */
-		:global(*) {
-			box-sizing: border-box;
+<style>
+	/* Estilos generales */
+	body {
+		margin: 0;
+		padding: 0;
+		font-family: Arial, sans-serif;
+		background: white;
+		font-size: 14px;
+	}
+	
+	.container {
+		max-width: 800px;
+		margin: 0 auto;
+		padding: 15px;
+	}
+	
+	.header {
+		text-align: center;
+		border-bottom: 2px solid #333;
+		padding-bottom: 15px;
+		margin-bottom: 20px;
+	}
+	
+	.header h1 {
+		margin: 0;
+		font-size: 20px;
+		color: #333;
+	}
+	
+	.section {
+		margin-bottom: 15px;
+	}
+	
+	.section-title {
+		font-size: 14px;
+		font-weight: bold;
+		color: #333;
+		margin-bottom: 8px;
+		border-bottom: 1px solid #ddd;
+		padding-bottom: 3px;
+	}
+	
+	.info-row {
+		margin-bottom: 5px;
+		font-size: 12px;
+	}
+	
+	.info-row strong {
+		color: #555;
+		display: inline-block;
+		width: 130px;
+	}
+	
+	.terms {
+		background: #f5f5f5;
+		padding: 10px;
+		border-radius: 5px;
+		margin-top: 15px;
+		font-size: 11px;
+	}
+	
+	.terms ul {
+		margin: 5px 0;
+		padding-left: 15px;
+	}
+	
+	.signature {
+		margin-top: 40px;
+		text-align: center;
+	}
+	
+	.signature-line {
+		display: inline-block;
+		width: 300px;
+		border-bottom: 1px solid #333;
+		margin-bottom: 5px;
+	}
+	
+	.highlight-box {
+		background: #f0f0f0;
+		border: 2px solid #333;
+		padding: 8px;
+		text-align: center;
+		font-weight: bold;
+		margin: 15px 0;
+		font-size: 14px;
+	}
+	
+	.page-break {
+		page-break-before: always;
+		margin-top: 0;
+	}
+	
+	.cancelled-stamp {
+		color: #dc3545;
+		font-size: 18px;
+		font-weight: bold;
+		text-align: center;
+		margin: 20px 0;
+		border: 3px solid #dc3545;
+		padding: 10px;
+		transform: rotate(-5deg);
+	}
+	
+	.exit-info {
+		background: #e8f4f8;
+		padding: 10px;
+		border-radius: 5px;
+		margin: 15px 0;
+	}
+	
+	.cost-section {
+		background: #f8f9fa;
+		padding: 10px;
+		border-radius: 5px;
+		margin: 15px 0;
+		border: 1px solid #dee2e6;
+	}
+	
+	.total-cost {
+		font-size: 18px;
+		font-weight: bold;
+		color: #333;
+		text-align: right;
+		margin-top: 10px;
+		padding-top: 10px;
+		border-top: 2px solid #333;
+	}
+	
+	/* CSS para impresión */
+	@media print {
+		/* Configuración de página para ocultar URL y otros elementos del navegador */
+		@page {
+			size: A4;
+			margin: 10mm;
 		}
 		
-		:global(body) {
-			margin: 0;
+		/* Intentar ocultar encabezados y pies del navegador */
+		@page :first {
+			margin-top: 10mm;
+		}
+		
+		.no-print {
+			display: none !important;
+		}
+		
+		.container {
 			padding: 0;
-			font-family: Arial, sans-serif;
-			font-size: 12pt;
-			line-height: 1.6;
-			color: #000;
-			background: #e5e7eb;
+			max-width: 100%;
 		}
 		
-		/* Estilos para pantalla - simular hoja A4 */
-		@media screen {
-			.print-container {
-				background: #e5e7eb;
-				padding: 20px 0;
-				min-height: 100vh;
-			}
-			
-			.print-page {
-				background: white;
-				box-shadow: 0 0 20px rgba(0,0,0,0.1);
-				margin: 0 auto 20px;
-				width: 210mm;
-				min-height: 297mm;
-				padding: 15mm 20mm;
-				position: relative;
-			}
-			
-			.no-print {
-				position: fixed;
-				top: 20px;
-				right: 20px;
-				z-index: 100;
-			}
+		.page-break {
+			page-break-before: always;
 		}
 		
-		/* Estilos para impresión */
-		@media print {
-			:global(body) {
-				background: white !important;
-			}
-			
-			.print-container {
-				background: white !important;
-			}
-			
-			.print-page {
-				margin: 0;
-				padding: 10mm 15mm;
-				box-shadow: none;
-				page-break-after: always;
-				page-break-inside: avoid;
-			}
-			
-			.print-page:last-child {
-				page-break-after: auto;
-			}
-			
-			.no-print {
-				display: none !important;
-			}
-			
-			/* Evitar saltos de página en elementos importantes */
-			h1, h2, h3, .info-box, .signature-section {
-				page-break-inside: avoid;
-			}
-			
-			/* Forzar colores en impresión */
-			* {
-				-webkit-print-color-adjust: exact;
-				print-color-adjust: exact;
-			}
+		/* Asegurar que el contenido use todo el espacio */
+		body {
+			margin: 0 !important;
+			padding: 0 !important;
 		}
-		
-		/* Estilos específicos del documento */
-		.order-header {
-			text-align: center;
-			margin-bottom: 30px;
-			padding-bottom: 20px;
-			border-bottom: 2px solid #000;
-		}
-		
-		.order-title {
-			font-size: 24pt;
-			font-weight: bold;
-			margin: 0 0 10px 0;
-		}
-		
-		.order-number {
-			font-size: 18pt;
-			margin: 5px 0;
-		}
-		
-		.copy-type {
-			font-size: 14pt;
-			color: #555;
-			margin-top: 10px;
-			font-weight: bold;
-		}
-		
-		.company-info {
-			text-align: center;
-			margin-bottom: 25px;
-		}
-		
-		.company-name {
-			font-size: 16pt;
-			font-weight: bold;
-			margin: 0;
-		}
-		
-		.info-box {
-			border: 1px solid #000;
-			padding: 15px;
-			margin-bottom: 20px;
-			background: #f9f9f9;
-		}
-		
-		.info-box h3 {
-			margin: 0 0 10px 0;
-			font-size: 14pt;
-			text-transform: uppercase;
-		}
-		
-		.info-grid {
-			display: grid;
-			grid-template-columns: 1fr 1fr;
-			gap: 10px;
-		}
-		
-		.info-item {
-			margin: 5px 0;
-		}
-		
-		.info-item.full-width {
-			grid-column: span 2;
-		}
-		
-		.signature-section {
-			margin-top: 60px;
-			padding-top: 20px;
-		}
-		
-		.signature-grid {
-			display: grid;
-			grid-template-columns: 1fr 1fr;
-			gap: 50px;
-			margin-top: 40px;
-		}
-		
-		.signature-box {
-			text-align: center;
-		}
-		
-		.signature-line {
-			border-bottom: 1px solid #000;
-			height: 50px;
-			margin-bottom: 5px;
-		}
-		
-		.terms {
-			margin-top: 30px;
-			padding-top: 20px;
-			border-top: 1px solid #ccc;
-			font-size: 10pt;
-		}
-		
-		.terms ul {
-			margin: 10px 0;
-			padding-left: 20px;
-		}
-		
-		.contact-info {
-			background: #f0f0f0;
-			padding: 15px;
-			margin: 20px 0;
-			border-radius: 5px;
-		}
-	</style>
-</svelte:head>
+	}
+	
+</style>
 
-<!-- Botón de imprimir -->
-<div class="no-print">
-	<button 
-		on:click={() => window.print()} 
-		class="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2 shadow-lg"
-	>
-		<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-		</svg>
-		Imprimir Orden
-	</button>
-</div>
-
-<div class="print-container">
-	<!-- Primera página: Copia Taller -->
-	<div class="print-page">
-		<div class="order-header">
-			<h1 class="order-title">ORDEN DE SERVICIO</h1>
-			<p class="order-number">#{repair.repairNumber}</p>
-			<p class="copy-type">— COPIA TALLER —</p>
+<!-- RECIBO -->
+<div class="container">
+	<div class="header">
+		<h1>{receiptTitle} #{repair.repairNumber}</h1>
+		<p style="margin: 5px 0; color: #666;">ORIGINAL</p>
+	</div>
+	
+	{#if repair.status === 'CANCELLED'}
+		<div class="cancelled-stamp">
+			NO REPARADO - ORDEN CANCELADA
 		</div>
-		
-		<div class="company-info">
-			<p class="company-name">ProManager</p>
-			<p style="margin: 0; font-size: 11pt;">Sistema de Gestión de Reparaciones</p>
+	{/if}
+	
+	<!-- Información del Cliente -->
+	<div class="section">
+		<h2 class="section-title">Información del Cliente</h2>
+		<div class="info-row">
+			<strong>Cliente:</strong> {repair.customer.name}
 		</div>
-		
-		<div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
-			<div><strong>Fecha de recepción:</strong> {formatDate(repair.receivedDate)}</div>
-			<div><strong>Hora:</strong> {formatTime(repair.receivedDate)}</div>
+		<div class="info-row">
+			<strong>Teléfono:</strong> {repair.customer.phone}
 		</div>
-		
-		<div class="info-box">
-			<h3>Datos del Cliente</h3>
-			<div class="info-grid">
-				<div class="info-item"><strong>Nombre:</strong> {repair.customer.name}</div>
-				<div class="info-item"><strong>Teléfono:</strong> {repair.customer.phone}</div>
-				{#if repair.customer.email}
-				<div class="info-item full-width"><strong>Email:</strong> {repair.customer.email}</div>
-				{/if}
-				{#if repair.customer.address}
-				<div class="info-item full-width"><strong>Dirección:</strong> {repair.customer.address}</div>
-				{/if}
-			</div>
+		<div class="info-row">
+			<strong>Fecha de recepción:</strong> {formatDate(repair.receivedDate)}
 		</div>
-		
-		<div class="info-box">
-			<h3>Datos del Dispositivo</h3>
-			<div class="info-grid">
-				<div class="info-item"><strong>Tipo:</strong> {repair.deviceType}</div>
-				<div class="info-item"><strong>Marca:</strong> {repair.brand}</div>
-				<div class="info-item"><strong>Modelo:</strong> {repair.model}</div>
-				<div class="info-item"><strong>N° Serie:</strong> {repair.serialNumber || 'N/A'}</div>
-			</div>
-			<div class="info-item" style="margin-top: 10px;">
-				<strong>Problema reportado:</strong>
-				<p style="margin: 5px 0;">{repair.issue}</p>
-			</div>
-		</div>
-		
-		{#if repair.estimatedCost}
-		<div class="info-box">
-			<strong>Costo estimado:</strong> ${repair.estimatedCost}
+		{#if printSettings.showDate}
+		<div class="info-row">
+			<strong>Fecha de impresión:</strong> {formatDate(new Date())}
 		</div>
 		{/if}
-		
-		{#if repair.estimatedDate}
-		<div style="margin: 20px 0;">
-			<strong>Fecha estimada de entrega:</strong> {formatDate(repair.estimatedDate)}
+	</div>
+	
+	<!-- Información del Equipo -->
+	<div class="section">
+		<h2 class="section-title">Información del Equipo</h2>
+		<div class="info-row">
+			<strong>Tipo de equipo:</strong> {repair.deviceType}
 		</div>
-		{/if}
-		
-		<div class="signature-section">
-			<div class="signature-grid">
-				<div class="signature-box">
-					<div class="signature-line"></div>
-					<p>Firma del Cliente</p>
-				</div>
-				<div class="signature-box">
-					<div class="signature-line"></div>
-					<p>Firma del Técnico</p>
-				</div>
-			</div>
+		<div class="info-row">
+			<strong>Marca:</strong> {repair.brand}
 		</div>
-		
-		<div class="terms">
-			<p><strong>Términos y condiciones:</strong></p>
-			<ul>
-				<li>El diagnóstico puede modificar el presupuesto inicial</li>
-				<li>Los equipos no reclamados después de 30 días no serán responsabilidad del taller</li>
-				<li>La garantía de reparación es de 30 días</li>
-			</ul>
+		<div class="info-row">
+			<strong>Modelo:</strong> {repair.model}
+		</div>
+		<div class="info-row">
+			<strong>Número de serie:</strong> {repair.serialNumber || 'N/A'}
 		</div>
 	</div>
 	
-	<!-- Segunda página: Copia Cliente -->
-	<div class="print-page">
-		<div class="order-header">
-			<h1 class="order-title">ORDEN DE SERVICIO</h1>
-			<p class="order-number">#{repair.repairNumber}</p>
-			<p class="copy-type">— COPIA CLIENTE —</p>
-		</div>
-		
-		<div class="company-info">
-			<p class="company-name">ProManager</p>
-			<p style="margin: 0; font-size: 11pt;">Sistema de Gestión de Reparaciones</p>
-		</div>
-		
-		<div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
-			<div><strong>Fecha de recepción:</strong> {formatDate(repair.receivedDate)}</div>
-			<div><strong>Hora:</strong> {formatTime(repair.receivedDate)}</div>
-		</div>
-		
-		<div class="info-box">
-			<h3>Datos del Cliente</h3>
-			<div class="info-grid">
-				<div class="info-item"><strong>Nombre:</strong> {repair.customer.name}</div>
-				<div class="info-item"><strong>Teléfono:</strong> {repair.customer.phone}</div>
-				{#if repair.customer.email}
-				<div class="info-item full-width"><strong>Email:</strong> {repair.customer.email}</div>
+	<!-- Problema Reportado -->
+	<div class="section">
+		<h2 class="section-title">Problema Reportado</h2>
+		<p>{repair.issue}</p>
+	</div>
+	
+	{#if isExitReceipt}
+		<!-- Información adicional para recibo de salida -->
+		<div class="exit-info">
+			<h2 class="section-title">Información de Salida</h2>
+			
+			{#if repair.status === 'COMPLETED' || repair.status === 'RETIRADO'}
+				{#if repair.workPerformed}
+					<div class="info-row">
+						<strong>Trabajo realizado:</strong>
+					</div>
+					<p style="margin-left: 20px;">{repair.workPerformed}</p>
+				{:else}
+					<div class="info-row" style="color: #666; font-style: italic;">
+						<strong>Trabajo realizado:</strong> No especificado
+					</div>
 				{/if}
-				{#if repair.customer.address}
-				<div class="info-item full-width"><strong>Dirección:</strong> {repair.customer.address}</div>
+				
+				{#if repair.finalObservations}
+					<div class="info-row" style="margin-top: 10px;">
+						<strong>Observaciones:</strong>
+					</div>
+					<p style="margin-left: 20px;">{repair.finalObservations}</p>
 				{/if}
+			{/if}
+			
+			{#if repair.status === 'CANCELLED'}
+				<div class="info-row">
+					<strong>Motivo de cancelación:</strong>
+				</div>
+				<p style="margin-left: 20px; color: #dc3545;">{repair.cancellationReason || 'No especificado'}</p>
+				
+				{#if repair.finalObservations}
+					<div class="info-row" style="margin-top: 10px;">
+						<strong>Observaciones:</strong>
+					</div>
+					<p style="margin-left: 20px;">{repair.finalObservations}</p>
+				{/if}
+			{/if}
+			
+			<div class="info-row" style="margin-top: 15px;">
+				<strong>Fecha de salida:</strong> {formatDate(new Date())}
 			</div>
 		</div>
 		
-		<div class="info-box">
-			<h3>Datos del Dispositivo</h3>
-			<div class="info-grid">
-				<div class="info-item"><strong>Tipo:</strong> {repair.deviceType}</div>
-				<div class="info-item"><strong>Marca:</strong> {repair.brand}</div>
-				<div class="info-item"><strong>Modelo:</strong> {repair.model}</div>
-				<div class="info-item"><strong>N° Serie:</strong> {repair.serialNumber || 'N/A'}</div>
+		<!-- Costos para recibo de salida -->
+		<div class="cost-section">
+			<h2 class="section-title">Detalle de Costos</h2>
+			<div class="info-row">
+				<strong>Mano de obra:</strong> ${repair.laborCost || 0}
 			</div>
-			<div class="info-item" style="margin-top: 10px;">
-				<strong>Problema reportado:</strong>
-				<p style="margin: 5px 0;">{repair.issue}</p>
+			<div class="info-row">
+				<strong>Repuestos:</strong> ${repair.partsCost || 0}
+			</div>
+			{#if repair.partsDescription}
+				<div class="info-row">
+					<strong>Descripción repuestos:</strong> {repair.partsDescription}
+				</div>
+			{/if}
+			<div class="total-cost">
+				TOTAL A PAGAR: ${(repair.laborCost || 0) + (repair.partsCost || 0)}
 			</div>
 		</div>
-		
-		{#if repair.estimatedCost}
-		<div class="info-box">
-			<strong>Costo estimado:</strong> ${repair.estimatedCost}
-		</div>
-		{/if}
-		
-		{#if repair.estimatedDate}
-		<div style="margin: 20px 0;">
-			<strong>Fecha estimada de entrega:</strong> {formatDate(repair.estimatedDate)}
-		</div>
-		{/if}
-		
-		<div class="contact-info">
-			<h3 style="margin-top: 0;">INFORMACIÓN DE CONTACTO</h3>
-			<p>Para consultar el estado de su reparación puede contactarnos a:</p>
-			<ul style="list-style: none; padding: 0;">
-				<li>• Teléfono: (xxx) xxx-xxxx</li>
-				<li>• Email: info@promanager.com</li>
-				<li>• Horario: Lunes a Viernes de 9:00 a 18:00</li>
-			</ul>
-		</div>
-		
+	{:else}
+		<!-- Términos y condiciones para orden de servicio -->
+		{#if printSettings.showTerms && termsAndConditions.length > 0}
 		<div class="terms">
-			<p><strong>Términos y condiciones:</strong></p>
+			<strong>Términos y Condiciones:</strong>
 			<ul>
-				<li>El diagnóstico puede modificar el presupuesto inicial</li>
-				<li>Los equipos no reclamados después de 30 días no serán responsabilidad del taller</li>
-				<li>La garantía de reparación es de 30 días</li>
-				<li><strong>Conserve este comprobante para retirar su equipo</strong></li>
+				{#each termsAndConditions as term}
+					{#if term.trim()}
+						<li>{term}</li>
+					{/if}
+				{/each}
 			</ul>
 		</div>
+		{/if}
+	{/if}
+	
+	{#if isExitReceipt}
+		<div class="highlight-box" style="margin-top: 30px;">
+			EQUIPO RETIRADO - SERVICIO FINALIZADO
+		</div>
+	{/if}
+	
+	<!-- Firma -->
+	<div class="signature">
+		<div class="signature-line"></div>
+		<p>Firma del Cliente</p>
 	</div>
 </div>
+
+{#if !isExitReceipt && printSettings.copiesCount > 1}
+<!-- COPIA CLIENTE (solo para orden de servicio) -->
+<div class="container page-break">
+	<div class="header">
+		<h1>{receiptTitle} #{repair.repairNumber}</h1>
+		<p style="margin: 5px 0; color: #666;">COPIA CLIENTE</p>
+	</div>
+	
+	{#if repair.status === 'CANCELLED'}
+		<div class="cancelled-stamp">
+			NO REPARADO - ORDEN CANCELADA
+		</div>
+	{/if}
+	
+	<!-- Información del Cliente -->
+	<div class="section">
+		<h2 class="section-title">Información del Cliente</h2>
+		<div class="info-row">
+			<strong>Cliente:</strong> {repair.customer.name}
+		</div>
+		<div class="info-row">
+			<strong>Teléfono:</strong> {repair.customer.phone}
+		</div>
+		<div class="info-row">
+			<strong>Fecha de recepción:</strong> {formatDate(repair.receivedDate)}
+		</div>
+		{#if printSettings.showDate}
+		<div class="info-row">
+			<strong>Fecha de impresión:</strong> {formatDate(new Date())}
+		</div>
+		{/if}
+	</div>
+	
+	<!-- Información del Equipo -->
+	<div class="section">
+		<h2 class="section-title">Información del Equipo</h2>
+		<div class="info-row">
+			<strong>Tipo de equipo:</strong> {repair.deviceType}
+		</div>
+		<div class="info-row">
+			<strong>Marca:</strong> {repair.brand}
+		</div>
+		<div class="info-row">
+			<strong>Modelo:</strong> {repair.model}
+		</div>
+		<div class="info-row">
+			<strong>Número de serie:</strong> {repair.serialNumber || 'N/A'}
+		</div>
+	</div>
+	
+	<!-- Problema Reportado -->
+	<div class="section">
+		<h2 class="section-title">Problema Reportado</h2>
+		<p>{repair.issue}</p>
+	</div>
+	
+	{#if isExitReceipt}
+		<!-- Información adicional para recibo de salida -->
+		<div class="exit-info">
+			<h2 class="section-title">Información de Salida</h2>
+			
+			{#if repair.status === 'COMPLETED' || repair.status === 'RETIRADO'}
+				{#if repair.workPerformed}
+					<div class="info-row">
+						<strong>Trabajo realizado:</strong>
+					</div>
+					<p style="margin-left: 20px;">{repair.workPerformed}</p>
+				{:else}
+					<div class="info-row" style="color: #666; font-style: italic;">
+						<strong>Trabajo realizado:</strong> No especificado
+					</div>
+				{/if}
+				
+				{#if repair.finalObservations}
+					<div class="info-row" style="margin-top: 10px;">
+						<strong>Observaciones:</strong>
+					</div>
+					<p style="margin-left: 20px;">{repair.finalObservations}</p>
+				{/if}
+			{/if}
+			
+			{#if repair.status === 'CANCELLED'}
+				<div class="info-row">
+					<strong>Motivo de cancelación:</strong>
+				</div>
+				<p style="margin-left: 20px; color: #dc3545;">{repair.cancellationReason || 'No especificado'}</p>
+				
+				{#if repair.finalObservations}
+					<div class="info-row" style="margin-top: 10px;">
+						<strong>Observaciones:</strong>
+					</div>
+					<p style="margin-left: 20px;">{repair.finalObservations}</p>
+				{/if}
+			{/if}
+			
+			<div class="info-row" style="margin-top: 15px;">
+				<strong>Fecha de salida:</strong> {formatDate(new Date())}
+			</div>
+		</div>
+		
+		<!-- Costos para recibo de salida -->
+		<div class="cost-section">
+			<h2 class="section-title">Detalle de Costos</h2>
+			<div class="info-row">
+				<strong>Mano de obra:</strong> ${repair.laborCost || 0}
+			</div>
+			<div class="info-row">
+				<strong>Repuestos:</strong> ${repair.partsCost || 0}
+			</div>
+			{#if repair.partsDescription}
+				<div class="info-row">
+					<strong>Descripción repuestos:</strong> {repair.partsDescription}
+				</div>
+			{/if}
+			<div class="total-cost">
+				TOTAL A PAGAR: ${(repair.laborCost || 0) + (repair.partsCost || 0)}
+			</div>
+		</div>
+	{:else}
+		<!-- Términos y condiciones para orden de servicio -->
+		{#if printSettings.showTerms && termsAndConditions.length > 0}
+		<div class="terms">
+			<strong>Términos y Condiciones:</strong>
+			<ul>
+				{#each termsAndConditions as term}
+					{#if term.trim()}
+						<li>{term}</li>
+					{/if}
+				{/each}
+			</ul>
+		</div>
+		{/if}
+	{/if}
+	
+	{#if isExitReceipt}
+		<div class="highlight-box" style="margin-top: 30px;">
+			EQUIPO RETIRADO - SERVICIO FINALIZADO
+		</div>
+	{/if}
+	
+	<!-- Firma -->
+	<div class="signature">
+		<div class="signature-line"></div>
+		<p>Firma del Cliente</p>
+	</div>
+</div>
+{/if}

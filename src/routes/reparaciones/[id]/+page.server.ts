@@ -36,6 +36,9 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		if (repair) {
 			console.log('🔧 Técnico asignado:', repair.technicianId);
 			console.log('📝 Cantidad de notas:', repair.notes?.length || 0);
+			console.log('💼 Trabajo realizado:', repair.workPerformed);
+			console.log('📄 Observaciones finales:', repair.finalObservations);
+			console.log('🏷️ Estado:', repair.status);
 		}
 
 		if (!repair) {
@@ -128,7 +131,7 @@ export const actions: Actions = {
 				WAITING_PARTS: 'Esperando repuestos',
 				COMPLETED: 'Terminado',
 				CANCELLED: 'Cancelado',
-				DELIVERED: 'Entregado'
+				RETIRADO: 'Retirado'
 			};
 
 			// SIEMPRE crear nota automática cuando cambia el estado
@@ -315,10 +318,10 @@ export const actions: Actions = {
 			throw redirect(302, '/login');
 		}
 
-		// Verificar que sea técnico
-		if (locals.user.role !== 'TECHNICIAN') {
-			console.error('❌ Usuario no es técnico:', locals.user.role);
-			throw error(403, 'Solo los técnicos pueden actualizar el link de compra');
+		// Verificar que sea técnico o administrador
+		if (locals.user.role !== 'TECHNICIAN' && locals.user.role !== 'ADMIN') {
+			console.error('❌ Usuario no tiene permisos:', locals.user.role);
+			throw error(403, 'Solo los técnicos y administradores pueden actualizar el link de compra');
 		}
 
 		const formData = await request.formData();
@@ -341,8 +344,8 @@ export const actions: Actions = {
 				currentLink: currentRepair.purchaseLink
 			});
 
-			// Verificar que el técnico esté asignado a esta reparación
-			if (currentRepair.technicianId !== locals.user.id) {
+			// Verificar permisos: técnicos solo sus reparaciones, admin puede todas
+			if (locals.user.role === 'TECHNICIAN' && currentRepair.technicianId !== locals.user.id) {
 				console.error('❌ Técnico no asignado:', {
 					repairTech: currentRepair.technicianId,
 					userTech: locals.user.id
@@ -495,6 +498,192 @@ export const actions: Actions = {
 		} catch (err) {
 			console.error('Error asignando técnico:', err);
 			return { error: 'Error al asignar el técnico' };
+		}
+	},
+
+	// Completar reparación
+	completeRepair: async ({ request, params, locals }) => {
+		console.log('✅ Iniciando completar reparación...');
+		console.log('👤 Usuario:', locals.user);
+		
+		if (!locals.user) {
+			throw redirect(302, '/login');
+		}
+
+		const formData = await request.formData();
+		const workPerformed = formData.get('workPerformed') as string;
+		const finalObservations = formData.get('finalObservations') as string;
+
+		if (!workPerformed || !workPerformed.trim()) {
+			return { error: 'Debe especificar el trabajo realizado' };
+		}
+
+		try {
+			// Obtener la reparación actual
+			const currentRepair = await prisma.repair.findUnique({
+				where: { id: params.id }
+			});
+
+			if (!currentRepair) {
+				throw error(404, 'Reparación no encontrada');
+			}
+
+			// Verificar permisos
+			if (locals.user.role === 'TECHNICIAN' && currentRepair.technicianId !== locals.user.id) {
+				throw error(403, 'Solo puedes completar tus reparaciones asignadas');
+			}
+
+			// Actualizar la reparación
+			const updateData: any = {
+				workPerformed: workPerformed.trim(),
+				finalObservations: finalObservations?.trim() || null,
+				updatedAt: new Date()
+			};
+			
+			// Solo cambiar el estado si no está ya en COMPLETED o RETIRADO
+			if (currentRepair.status !== 'COMPLETED' && currentRepair.status !== 'RETIRADO') {
+				updateData.status = 'COMPLETED';
+			}
+			
+			await prisma.repair.update({
+				where: { id: params.id },
+				data: updateData
+			});
+
+			// Crear nota automática
+			const noteText = (currentRepair.status === 'COMPLETED' || currentRepair.status === 'RETIRADO')
+				? `📝 Información de reparación actualizada\n🔧 Trabajo realizado: ${workPerformed.trim()}${finalObservations ? '\n💬 Observaciones: ' + finalObservations.trim() : ''}`
+				: `✅ Reparación completada\n🔧 Trabajo realizado: ${workPerformed.trim()}${finalObservations ? '\n📝 Observaciones: ' + finalObservations.trim() : ''}`;
+				
+			await prisma.note.create({
+				data: {
+					text: noteText,
+					repairId: params.id,
+					authorId: locals.user.id
+				}
+			});
+
+			console.log('✅ Reparación completada correctamente');
+			return { success: true };
+		} catch (err) {
+			console.error('💥 Error completando reparación:', err);
+			return { error: 'Error al completar la reparación' };
+		}
+	},
+
+	// Guardar información de trabajo (auto-guardado)
+	saveWorkInfo: async ({ request, params, locals }) => {
+		console.log('💾 Iniciando guardado de información de trabajo...');
+		console.log('👤 Usuario:', locals.user);
+		
+		if (!locals.user) {
+			throw redirect(302, '/login');
+		}
+
+		const formData = await request.formData();
+		const workPerformed = formData.get('workPerformed') as string;
+		const finalObservations = formData.get('finalObservations') as string;
+
+		try {
+			// Obtener la reparación actual
+			const currentRepair = await prisma.repair.findUnique({
+				where: { id: params.id }
+			});
+
+			if (!currentRepair) {
+				throw error(404, 'Reparación no encontrada');
+			}
+
+			// Verificar permisos
+			if (locals.user.role === 'TECHNICIAN' && currentRepair.technicianId !== locals.user.id) {
+				throw error(403, 'Solo puedes actualizar tus reparaciones asignadas');
+			}
+
+			// Actualizar solo los campos de trabajo sin cambiar el estado
+			await prisma.repair.update({
+				where: { id: params.id },
+				data: {
+					workPerformed: workPerformed?.trim() || null,
+					finalObservations: finalObservations?.trim() || null,
+					updatedAt: new Date()
+				}
+			});
+
+			console.log('✅ Información de trabajo guardada correctamente');
+			return { success: true };
+		} catch (err) {
+			console.error('💥 Error guardando información de trabajo:', err);
+			return { error: 'Error al guardar la información' };
+		}
+	},
+
+	// Cancelar reparación
+	cancelRepair: async ({ request, params, locals }) => {
+		console.log('❌ Iniciando cancelar reparación...');
+		console.log('👤 Usuario:', locals.user);
+		
+		if (!locals.user) {
+			throw redirect(302, '/login');
+		}
+
+		const formData = await request.formData();
+		const cancellationReason = formData.get('cancellationReason') as string;
+		const finalObservations = formData.get('finalObservations') as string;
+
+		if (!cancellationReason || !cancellationReason.trim()) {
+			return { error: 'Debe especificar el motivo de cancelación' };
+		}
+
+		try {
+			// Obtener la reparación actual
+			const currentRepair = await prisma.repair.findUnique({
+				where: { id: params.id }
+			});
+
+			if (!currentRepair) {
+				throw error(404, 'Reparación no encontrada');
+			}
+
+			// Verificar permisos
+			if (locals.user.role === 'TECHNICIAN' && currentRepair.technicianId !== locals.user.id) {
+				throw error(403, 'Solo puedes cancelar tus reparaciones asignadas');
+			}
+
+			// Actualizar la reparación
+			const updateData: any = {
+				cancellationReason: cancellationReason.trim(),
+				finalObservations: finalObservations?.trim() || null,
+				updatedAt: new Date()
+			};
+			
+			// Solo cambiar el estado si no está ya en CANCELLED
+			if (currentRepair.status !== 'CANCELLED') {
+				updateData.status = 'CANCELLED';
+			}
+			
+			await prisma.repair.update({
+				where: { id: params.id },
+				data: updateData
+			});
+
+			// Crear nota automática
+			const noteText = currentRepair.status === 'CANCELLED'
+				? `📝 Información de cancelación actualizada\n❌ Motivo: ${cancellationReason.trim()}${finalObservations ? '\n💬 Observaciones: ' + finalObservations.trim() : ''}`
+				: `❌ Reparación cancelada\n📝 Motivo: ${cancellationReason.trim()}${finalObservations ? '\n💬 Observaciones: ' + finalObservations.trim() : ''}`;
+				
+			await prisma.note.create({
+				data: {
+					text: noteText,
+					repairId: params.id,
+					authorId: locals.user.id
+				}
+			});
+
+			console.log('❌ Reparación cancelada correctamente');
+			return { success: true };
+		} catch (err) {
+			console.error('💥 Error cancelando reparación:', err);
+			return { error: 'Error al cancelar la reparación' };
 		}
 	}
 };

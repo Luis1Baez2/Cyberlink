@@ -151,6 +151,28 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			// Evaluación ajustada
 			const evaluation = getAdjustedEvaluation(periodCompleted, monthlyGoal, workDaysElapsed, workDaysInPeriod);
 
+			// Obtener estadísticas de equipos por categoría para el técnico
+			const technicianDeviceStats = await prisma.repair.groupBy({
+				by: ['deviceType'],
+				where: {
+					technicianId: locals.user.id,
+					receivedDate: {
+						gte: periodStart,
+						lte: periodEnd
+					}
+				},
+				_count: {
+					deviceType: true
+				}
+			});
+
+			// Formatear estadísticas de dispositivos
+			const deviceCategories = technicianDeviceStats.map(stat => ({
+				type: stat.deviceType,
+				count: stat._count.deviceType,
+				percentage: technicianRepairs.length > 0 ? (stat._count.deviceType / technicianRepairs.length) * 100 : 0
+			})).sort((a, b) => b.count - a.count);
+
 			return {
 				user: locals.user,
 				isTechnician: true,
@@ -181,7 +203,9 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 				totalRepairs: technicianRepairs.length,
 				activeRepairs: technicianRepairs.filter(r => 
 					!['COMPLETED', 'DELIVERED', 'CANCELLED'].includes(r.status)
-				).length
+				).length,
+				// Categorías de equipos
+				deviceCategories
 			};
 		}
 

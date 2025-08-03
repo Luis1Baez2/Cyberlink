@@ -226,8 +226,8 @@ export const actions: Actions = {
 
 			console.log('✅ Reparación creada exitosamente:', repair.id);
 			
-			// Redirigir a la página de detalles de la reparación
-			throw redirect(302, `/reparaciones/${repair.id}`);
+			// Redirigir a la página de detalles de la reparación con flag para imprimir y número de orden
+			throw redirect(302, `/reparaciones/${repair.id}?print=true&created=true&orderNumber=${repair.repairNumber}`);
 		} catch (error) {
 			// Si es un redirect, lanzarlo (es parte del flujo normal, no un error)
 			if (error instanceof Response) {

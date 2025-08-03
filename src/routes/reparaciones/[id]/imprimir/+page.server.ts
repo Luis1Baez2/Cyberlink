@@ -27,6 +27,15 @@ export const load: PageServerLoad = async ({ params }) => {
 			throw error(404, 'Reparación no encontrada');
 		}
 
+		// Debug log
+		console.log('🖨️ Datos de impresión:', {
+			id: repair.id,
+			status: repair.status,
+			workPerformed: repair.workPerformed,
+			finalObservations: repair.finalObservations,
+			cancellationReason: repair.cancellationReason
+		});
+
 		return {
 			repair
 		};

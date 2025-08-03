@@ -19,23 +19,10 @@ export const load: PageServerLoad = async ({ locals }) => {
 		const { prisma } = await import('$lib/server/prisma');
 		
 		try {
-			// Contar reparaciones en estado WAITING_PARTS o con link de compra
+			// Contar solo reparaciones en estado WAITING_PARTS
 			pendingPartsCount = await prisma.repair.count({
 				where: {
-					OR: [
-						// Reparaciones en espera de repuesto
-						{ status: 'WAITING_PARTS' },
-						// O reparaciones con link de compra pendiente
-						{
-							purchaseLink: {
-								not: null
-							},
-							OR: [
-								{ partsStatus: null },
-								{ partsStatus: 'PENDING' }
-							]
-						}
-					]
+					status: 'WAITING_PARTS'
 				}
 			});
 		} catch (error) {
@@ -43,17 +30,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 			console.log('Usando método alternativo para contar repuestos');
 			pendingPartsCount = await prisma.repair.count({
 				where: {
-					OR: [
-						{ status: 'WAITING_PARTS' },
-						{
-							purchaseLink: {
-								not: null
-							},
-							partsCost: {
-								not: null
-							}
-						}
-					]
+					status: 'WAITING_PARTS'
 				}
 			});
 		}

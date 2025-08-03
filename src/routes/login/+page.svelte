@@ -13,17 +13,17 @@
 	});
 </script>
 
-<div class="min-h-screen relative overflow-hidden bg-gradient-to-br from-gray-50 via-white to-gray-100">
+<div class="min-h-screen relative overflow-hidden bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
 	<!-- Círculos decorativos animados más suaves -->
-	<div class="absolute top-0 -left-4 w-72 h-72 bg-gray-200 rounded-full mix-blend-multiply filter blur-xl opacity-40 animate-blob"></div>
-	<div class="absolute top-0 -right-4 w-72 h-72 bg-slate-200 rounded-full mix-blend-multiply filter blur-xl opacity-40 animate-blob animation-delay-2000"></div>
-	<div class="absolute -bottom-8 left-20 w-72 h-72 bg-zinc-200 rounded-full mix-blend-multiply filter blur-xl opacity-40 animate-blob animation-delay-4000"></div>
-	<div class="absolute bottom-0 right-20 w-72 h-72 bg-neutral-200 rounded-full mix-blend-multiply filter blur-xl opacity-40 animate-blob animation-delay-6000"></div>
+	<div class="absolute top-0 -left-4 w-72 h-72 bg-gray-200 dark:bg-gray-700 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-xl opacity-40 dark:opacity-20 animate-blob"></div>
+	<div class="absolute top-0 -right-4 w-72 h-72 bg-slate-200 dark:bg-slate-700 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-xl opacity-40 dark:opacity-20 animate-blob animation-delay-2000"></div>
+	<div class="absolute -bottom-8 left-20 w-72 h-72 bg-zinc-200 dark:bg-zinc-700 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-xl opacity-40 dark:opacity-20 animate-blob animation-delay-4000"></div>
+	<div class="absolute bottom-0 right-20 w-72 h-72 bg-neutral-200 dark:bg-neutral-700 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-xl opacity-40 dark:opacity-20 animate-blob animation-delay-6000"></div>
 	
 	<div class="min-h-screen flex items-center justify-center px-4 relative z-10">
 		{#if mounted}
 			<div in:fly={{ y: 50, duration: 800, delay: 200 }} 
-				class="bg-white/70 backdrop-blur-lg p-8 sm:p-10 rounded-3xl shadow-2xl w-full max-w-md transform transition-all duration-500 hover:shadow-3xl">
+				class="bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg p-8 sm:p-10 rounded-3xl shadow-2xl w-full max-w-md transform transition-all duration-500 hover:shadow-3xl">
 				
 				<!-- Logo y título -->
 				<div class="text-center mb-8">
@@ -32,11 +32,11 @@
 						🛠️
 					</div>
 					<h1 in:fly={{ y: 20, duration: 600, delay: 600 }} 
-						class="text-4xl font-light text-gray-800 mb-2">
+						class="text-4xl font-light text-gray-800 dark:text-gray-100 mb-2">
 						ProManager
 					</h1>
 					<p in:fade={{ duration: 600, delay: 800 }} 
-						class="text-gray-600 text-sm">Sistema de Gestión Integral</p>
+						class="text-gray-600 dark:text-gray-400 text-sm">Sistema de Gestión Integral</p>
 				</div>
 				
 				<form method="POST" use:enhance={() => {
@@ -48,9 +48,9 @@
 				}} class="space-y-6">
 					<!-- Campo de usuario -->
 					<div in:fly={{ x: -30, duration: 600, delay: 1000 }}>
-						<label class="block text-sm font-medium text-gray-700 mb-2">Usuario</label>
+						<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Usuario</label>
 						<div class="relative">
-							<span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+							<span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500">
 								👤
 							</span>
 							<input
@@ -58,16 +58,16 @@
 								type="text"
 								required
 								placeholder="Ingresa tu usuario"
-								class="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:border-transparent focus:ring-2 focus:ring-purple-500 focus:bg-white transition-all duration-300 placeholder-gray-400"
+								class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-2xl focus:outline-none focus:border-transparent focus:ring-2 focus:ring-purple-500 focus:bg-white dark:focus:bg-gray-600 transition-all duration-300 placeholder-gray-400 dark:placeholder-gray-500 text-gray-900 dark:text-gray-100"
 							/>
 						</div>
 					</div>
 					
 					<!-- Campo de contraseña -->
 					<div in:fly={{ x: -30, duration: 600, delay: 1200 }}>
-						<label class="block text-sm font-medium text-gray-700 mb-2">Contraseña</label>
+						<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Contraseña</label>
 						<div class="relative">
-							<span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+							<span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500">
 								🔒
 							</span>
 							<input
@@ -75,12 +75,12 @@
 								type={showPassword ? 'text' : 'password'}
 								required
 								placeholder="Ingresa tu contraseña"
-								class="w-full pl-12 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:border-transparent focus:ring-2 focus:ring-purple-500 focus:bg-white transition-all duration-300 placeholder-gray-400"
+								class="w-full pl-12 pr-12 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-2xl focus:outline-none focus:border-transparent focus:ring-2 focus:ring-purple-500 focus:bg-white dark:focus:bg-gray-600 transition-all duration-300 placeholder-gray-400 dark:placeholder-gray-500 text-gray-900 dark:text-gray-100"
 							/>
 							<button
 								type="button"
 								on:click={() => showPassword = !showPassword}
-								class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+								class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 transition-colors duration-200"
 							>
 								{#if showPassword}
 									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -121,9 +121,9 @@
 					{#if form?.error}
 						<div in:fade={{ duration: 300 }} 
 							class="p-4 rounded-2xl text-center text-sm
-								{form?.blocked ? 'bg-red-100 text-red-700 border border-red-200' : 
-								 form?.warning ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' : 
-								 'bg-red-50 text-red-600 border border-red-100'}">
+								{form?.blocked ? 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800' : 
+								 form?.warning ? 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-800' : 
+								 'bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-900'}">
 							{form.error}
 						</div>
 					{/if}
@@ -132,14 +132,14 @@
 				<!-- Link de recuperación -->
 				<div in:fade={{ duration: 600, delay: 1600 }} class="mt-8 text-center">
 					<a href="/recuperar-password" 
-						class="text-sm text-purple-600 hover:text-purple-700 font-medium transition-colors duration-200">
+						class="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium transition-colors duration-200">
 						¿Olvidaste tu contraseña?
 					</a>
 				</div>
 				
 				<!-- Footer -->
-				<div in:fade={{ duration: 600, delay: 1800 }} class="mt-8 pt-6 border-t border-gray-200">
-					<p class="text-center text-xs text-gray-500">
+				<div in:fade={{ duration: 600, delay: 1800 }} class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+					<p class="text-center text-xs text-gray-500 dark:text-gray-400">
 						© 2025 ProManager. Todos los derechos reservados.
 					</p>
 				</div>
