@@ -18,6 +18,14 @@
 	let availableNotes = [];
 	let newNote = '';
 	
+	// Configuración adicional de impresión
+	let printSettings = {
+		showLogo: true,
+		showDate: true,
+		showTerms: true,
+		copiesCount: 2
+	};
+	
 	// Estados para feedback
 	let saveSuccess = false;
 	let saveError = false;

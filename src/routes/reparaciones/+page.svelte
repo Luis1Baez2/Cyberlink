@@ -223,7 +223,7 @@
 					
 					<div class="mt-6 sm:mt-0 flex items-center space-x-3">
 						{#if data.user?.role !== 'TECHNICIAN'}
-						<div class="bg-white/20 backdrop-blur-lg rounded-2xl p-1 flex space-x-2">
+						<div class="bg-white/20 backdrop-blur-lg rounded-2xl p-1 flex space-x-2 relative z-20">
 							<a
 								href="/reparaciones/nueva"
 								class="bg-transparent text-white hover:bg-white/10 px-4 py-2 rounded-xl transition-all duration-300 flex items-center"
@@ -233,15 +233,18 @@
 								</svg>
 								Nueva Reparación
 							</a>
+							{#if data.user?.role === 'ADMIN' || data.user?.role === 'MANAGER'}
 							<a
-								href="/reparaciones/editar-impresion"
+								href="/reparaciones/configuracion"
 								class="bg-transparent text-white hover:bg-white/10 px-4 py-2 rounded-xl transition-all duration-300 flex items-center"
 							>
 								<svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
 								</svg>
-								Editar impresión
+								Configurar impresión
 							</a>
+							{/if}
 						</div>
 						{/if}
 					</div>

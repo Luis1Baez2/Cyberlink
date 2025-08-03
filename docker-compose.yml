@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: cyberlink-app
+    ports:
+      - "5051:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=file:/app/data/cyberlink.db
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-this-in-production}
+      - ORIGIN=http://localhost:5051
+    volumes:
+      - ./data:/app/data
+      - ./uploads:/app/uploads
+    restart: unless-stopped
+    networks:
+      - cyberlink-network
+    depends_on:
+      - db-init
+
+  db-init:
+    build: .
+    container_name: cyberlink-db-init
+    command: >
+      sh -c "
+        npx prisma db push --skip-generate &&
+        if [ ! -f /app/data/.initialized ]; then
+          npx prisma db seed &&
+          touch /app/data/.initialized &&
+          echo 'Database initialized with seed data';
+        else
+          echo 'Database already initialized';
+        fi
+      "
+    environment:
+      - DATABASE_URL=file:/app/data/cyberlink.db
+    volumes:
+      - ./data:/app/data
+    networks:
+      - cyberlink-network
+
+  # Optional: Add a backup service
+  backup:
+    image: alpine:latest
+    container_name: cyberlink-backup
+    volumes:
+      - ./data:/data
+      - ./backups:/backups
+    command: >
+      sh -c "
+        while true; do
+          echo 'Creating backup...';
+          cp -f /data/cyberlink.db /backups/cyberlink-backup-$$(date +%Y%m%d-%H%M%S).db;
+          find /backups -name 'cyberlink-backup-*.db' -mtime +7 -delete;
+          echo 'Backup completed';
+          sleep 86400;
+        done
+      "
+    restart: unless-stopped
+    networks:
+      - cyberlink-network
+
+networks:
+  cyberlink-network:
+    driver: bridge
+
+volumes:
+  data:
+  uploads:
+  backups:
