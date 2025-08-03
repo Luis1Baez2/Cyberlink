@@ -1,6 +1,6 @@
 import type { PageServerLoad, Actions } from './$types';
 import { redirect, error } from '@sveltejs/kit';
-import { prisma } from '$lib/server/prisma';
+import { db } from '$lib/server/db';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user) {
@@ -13,7 +13,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 	}
 
 	// Obtener todas las reparaciones que tengan relación con repuestos
-	const repairsWithParts = await prisma.repair.findMany({
+	const repairsWithParts = await db.repair.findMany({
 		where: {
 			OR: [
 				{ status: 'WAITING_PARTS' },
@@ -102,7 +102,7 @@ export const actions: Actions = {
 
 			// Marcar como comprado directamente
 			try {
-				await prisma.repair.update({
+				await db.repair.update({
 					where: { id: repairId },
 					data: { 
 						partsStatus: 'PURCHASED',
@@ -112,7 +112,7 @@ export const actions: Actions = {
 				});
 			} catch (error) {
 				// Fallback si el campo no existe
-				await prisma.repair.update({
+				await db.repair.update({
 					where: { id: repairId },
 					data: { 
 						updatedAt: new Date()
@@ -126,7 +126,7 @@ export const actions: Actions = {
 				noteText += ` - Llegada estimada: ${parseInt(estimatedDays)} días`;
 			}
 
-			await prisma.note.create({
+			await db.note.create({
 				data: {
 					text: noteText,
 					repairId,
@@ -162,7 +162,7 @@ export const actions: Actions = {
 			}
 
 			try {
-				await prisma.repair.update({
+				await db.repair.update({
 					where: { id: repairId },
 					data: { 
 						estimatedArrival: estimatedArrival,
@@ -171,7 +171,7 @@ export const actions: Actions = {
 				});
 			} catch (error) {
 				// Fallback 
-				await prisma.repair.update({
+				await db.repair.update({
 					where: { id: repairId },
 					data: { 
 						updatedAt: new Date()
@@ -180,7 +180,7 @@ export const actions: Actions = {
 			}
 
 			// Crear nota
-			await prisma.note.create({
+			await db.note.create({
 				data: {
 					text: `📅 Tiempo estimado de llegada actualizado: ${parseInt(estimatedDays)} días`,
 					repairId,

@@ -16,11 +16,11 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 	// Si es el dueño, obtener cantidad de repuestos pendientes
 	if (locals.user.username === 'dueño') {
-		const { prisma } = await import('$lib/server/prisma');
+		const { db } = await import('$lib/server/db');
 		
 		try {
 			// Contar solo reparaciones en estado WAITING_PARTS
-			pendingPartsCount = await prisma.repair.count({
+			pendingPartsCount = await db.repair.count({
 				where: {
 					status: 'WAITING_PARTS'
 				}
@@ -28,7 +28,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 		} catch (error) {
 			// Si falla, usar método alternativo
 			console.log('Usando método alternativo para contar repuestos');
-			pendingPartsCount = await prisma.repair.count({
+			pendingPartsCount = await db.repair.count({
 				where: {
 					status: 'WAITING_PARTS'
 				}

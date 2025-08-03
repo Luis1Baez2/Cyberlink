@@ -530,10 +530,6 @@
 		</div>
 	{/if}
 	
-	<!-- Firma -->
-	<div class="signature">
-		<div class="signature-line"></div>
-		<p>Firma del Cliente</p>
-	</div>
+	
 </div>
 {/if}

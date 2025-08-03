@@ -3,16 +3,16 @@ import type { LayoutServerLoad } from './$types';
 export const load: LayoutServerLoad = async ({ locals }) => {
 	let pendingPartsCount = 0;
 
-	// Si es el dueño, obtener cantidad de repuestos pendientes
+	// Si es el dueño, obtener cantidad de repuestos pendientes y notificaciones de compra
 	if (locals.user && locals.user.username === 'dueño') {
-		const { prisma } = await import('$lib/server/prisma');
+		const { db } = await import('$lib/server/db');
 		
 		try {
 			// Contar SOLO reparaciones en estado WAITING_PARTS que NO hayan sido compradas
 			console.log('🔍 Consultando repuestos pendientes...');
 			
 			// Primero, obtener TODAS las reparaciones con link para debug
-			const allRepairsWithLink = await prisma.repair.findMany({
+			const allRepairsWithLink = await db.repair.findMany({
 				where: {
 					purchaseLink: { not: null }
 				},
@@ -32,7 +32,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 			});
 
 			// Ahora obtener solo las que están en WAITING_PARTS
-			const repairs = await prisma.repair.findMany({
+			const repairs = await db.repair.findMany({
 				where: {
 					status: 'WAITING_PARTS'
 				},
@@ -60,6 +60,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 			
 			pendingPartsCount = filteredRepairs.length;
 			console.log('✅ Repuestos pendientes de compra:', pendingPartsCount);
+			
 			
 		} catch (error) {
 			console.error('❌ Error consultando repuestos:', error);

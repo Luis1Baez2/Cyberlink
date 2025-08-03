@@ -1,6 +1,6 @@
 import type { PageServerLoad, Actions } from './$types';
 import { error, redirect } from '@sveltejs/kit';
-import { prisma } from '$lib/server/prisma';
+import { db } from '$lib/server/db';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	// Verificar autenticación
@@ -15,7 +15,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	try {
 		// Obtener la reparación con todas sus relaciones
 		console.log('📊 Consultando base de datos...');
-		const repair = await prisma.repair.findUnique({
+		const repair = await db.repair.findUnique({
 			where: { id: repairId },
 			include: {
 				customer: true,
@@ -56,7 +56,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		let technicians = [];
 		if (['ADMIN', 'MANAGER'].includes(locals.user.role)) {
 			console.log('👥 Cargando lista de técnicos...');
-			technicians = await prisma.user.findMany({
+			technicians = await db.user.findMany({
 				where: { role: 'TECHNICIAN' },
 				select: {
 					id: true,
@@ -101,7 +101,7 @@ export const actions: Actions = {
 
 		try {
 			// Obtener la reparación actual
-			const currentRepair = await prisma.repair.findUnique({
+			const currentRepair = await db.repair.findUnique({
 				where: { id: params.id }
 			});
 
@@ -115,7 +115,7 @@ export const actions: Actions = {
 			}
 
 			// Actualizar el estado en la base de datos
-			await prisma.repair.update({
+			await db.repair.update({
 				where: { id: params.id },
 				data: {
 					status: newStatus,
@@ -138,7 +138,7 @@ export const actions: Actions = {
 			if (currentRepair.status !== newStatus) {
 				const automaticNoteText = `🔄 Estado cambiado de "${statusLabels[currentRepair.status]}" a "${statusLabels[newStatus]}"`;
 				
-				await prisma.note.create({
+				await db.note.create({
 					data: {
 						text: automaticNoteText,
 						repairId: params.id,
@@ -149,7 +149,7 @@ export const actions: Actions = {
 
 			// Si el usuario agregó una nota adicional, crearla también
 			if (userNote && userNote.trim()) {
-				await prisma.note.create({
+				await db.note.create({
 					data: {
 						text: userNote.trim(),
 						repairId: params.id,
@@ -180,7 +180,7 @@ export const actions: Actions = {
 
 		try {
 			// Verificar que la reparación existe
-			const repair = await prisma.repair.findUnique({
+			const repair = await db.repair.findUnique({
 				where: { id: params.id }
 			});
 
@@ -194,7 +194,7 @@ export const actions: Actions = {
 			}
 
 			// Crear la nota
-			await prisma.note.create({
+			await db.note.create({
 				data: {
 					text: text.trim(),
 					repairId: params.id,
@@ -236,7 +236,7 @@ export const actions: Actions = {
 		}
 
 		// Verificar permisos
-		const currentRepair = await prisma.repair.findUnique({
+		const currentRepair = await db.repair.findUnique({
 			where: { id: params.id }
 		});
 
@@ -285,7 +285,7 @@ export const actions: Actions = {
 			}
 
 			console.log('💾 Actualizando costos en BD...');
-			await prisma.repair.update({
+			await db.repair.update({
 				where: { id: params.id },
 				data: updateData
 			});
@@ -293,7 +293,7 @@ export const actions: Actions = {
 
 			// Crear nota automática
 			const costoTotal = (parseFloat(laborCost) || 0) + (parseFloat(partsCost) || 0);
-			await prisma.note.create({
+			await db.note.create({
 				data: {
 					text: `💰 Costos actualizados - Mano de obra: $${laborCost || 0}, Repuestos: $${partsCost || 0}, Total: $${costoTotal}`,
 					repairId: params.id,
@@ -330,7 +330,7 @@ export const actions: Actions = {
 
 		try {
 			// Obtener la reparación actual
-			const currentRepair = await prisma.repair.findUnique({
+			const currentRepair = await db.repair.findUnique({
 				where: { id: params.id }
 			});
 
@@ -355,7 +355,7 @@ export const actions: Actions = {
 
 			// Actualizar solo el link de compra
 			console.log('💾 Actualizando link en BD...');
-			await prisma.repair.update({
+			await db.repair.update({
 				where: { id: params.id },
 				data: {
 					purchaseLink: purchaseLink || null,
@@ -366,7 +366,7 @@ export const actions: Actions = {
 
 			// Crear nota automática
 			if (purchaseLink && purchaseLink.trim()) {
-				await prisma.note.create({
+				await db.note.create({
 					data: {
 						text: `🔗 Link de compra actualizado: ${purchaseLink}`,
 						repairId: params.id,
@@ -374,7 +374,7 @@ export const actions: Actions = {
 					}
 				});
 			} else if (currentRepair.purchaseLink && !purchaseLink) {
-				await prisma.note.create({
+				await db.note.create({
 					data: {
 						text: `🔗 Link de compra eliminado`,
 						repairId: params.id,
@@ -418,7 +418,7 @@ export const actions: Actions = {
 
 			// Obtener la reparación actual con técnico incluido
 			console.log('📊 Consultando reparación actual...');
-			const currentRepair = await prisma.repair.findUnique({
+			const currentRepair = await db.repair.findUnique({
 				where: { id: params.id },
 				include: { 
 					technician: {
@@ -438,7 +438,7 @@ export const actions: Actions = {
 			}
 
 			// Obtener información del nuevo técnico si se proporciona ID
-			const newTechnician = newTechnicianId ? await prisma.user.findUnique({
+			const newTechnician = newTechnicianId ? await db.user.findUnique({
 				where: { id: newTechnicianId },
 				select: { id: true, name: true }
 			}) : null;
@@ -450,7 +450,7 @@ export const actions: Actions = {
 
 			// Actualizar la reparación con el nuevo técnico
 			console.log('💾 Actualizando reparación...');
-			await prisma.repair.update({
+			await db.repair.update({
 				where: { id: params.id },
 				data: {
 					technicianId: newTechnicianId || null,
@@ -482,7 +482,7 @@ export const actions: Actions = {
 			// Crear la nota automática si hay cambios
 			if (automaticNoteText) {
 				console.log('💾 Creando nota automática...');
-				await prisma.note.create({
+				await db.note.create({
 					data: {
 						text: automaticNoteText,
 						repairId: params.id,
@@ -520,7 +520,7 @@ export const actions: Actions = {
 
 		try {
 			// Obtener la reparación actual
-			const currentRepair = await prisma.repair.findUnique({
+			const currentRepair = await db.repair.findUnique({
 				where: { id: params.id }
 			});
 
@@ -545,7 +545,7 @@ export const actions: Actions = {
 				updateData.status = 'COMPLETED';
 			}
 			
-			await prisma.repair.update({
+			await db.repair.update({
 				where: { id: params.id },
 				data: updateData
 			});
@@ -555,7 +555,7 @@ export const actions: Actions = {
 				? `📝 Información de reparación actualizada\n🔧 Trabajo realizado: ${workPerformed.trim()}${finalObservations ? '\n💬 Observaciones: ' + finalObservations.trim() : ''}`
 				: `✅ Reparación completada\n🔧 Trabajo realizado: ${workPerformed.trim()}${finalObservations ? '\n📝 Observaciones: ' + finalObservations.trim() : ''}`;
 				
-			await prisma.note.create({
+			await db.note.create({
 				data: {
 					text: noteText,
 					repairId: params.id,
@@ -586,7 +586,7 @@ export const actions: Actions = {
 
 		try {
 			// Obtener la reparación actual
-			const currentRepair = await prisma.repair.findUnique({
+			const currentRepair = await db.repair.findUnique({
 				where: { id: params.id }
 			});
 
@@ -600,7 +600,7 @@ export const actions: Actions = {
 			}
 
 			// Actualizar solo los campos de trabajo sin cambiar el estado
-			await prisma.repair.update({
+			await db.repair.update({
 				where: { id: params.id },
 				data: {
 					workPerformed: workPerformed?.trim() || null,
@@ -636,7 +636,7 @@ export const actions: Actions = {
 
 		try {
 			// Obtener la reparación actual
-			const currentRepair = await prisma.repair.findUnique({
+			const currentRepair = await db.repair.findUnique({
 				where: { id: params.id }
 			});
 
@@ -661,7 +661,7 @@ export const actions: Actions = {
 				updateData.status = 'CANCELLED';
 			}
 			
-			await prisma.repair.update({
+			await db.repair.update({
 				where: { id: params.id },
 				data: updateData
 			});
@@ -671,7 +671,7 @@ export const actions: Actions = {
 				? `📝 Información de cancelación actualizada\n❌ Motivo: ${cancellationReason.trim()}${finalObservations ? '\n💬 Observaciones: ' + finalObservations.trim() : ''}`
 				: `❌ Reparación cancelada\n📝 Motivo: ${cancellationReason.trim()}${finalObservations ? '\n💬 Observaciones: ' + finalObservations.trim() : ''}`;
 				
-			await prisma.note.create({
+			await db.note.create({
 				data: {
 					text: noteText,
 					repairId: params.id,

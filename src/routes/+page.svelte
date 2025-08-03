@@ -154,7 +154,7 @@
 					</div>
 					<div>
 						<h3 class="text-lg font-medium text-gray-900">
-							{data.pendingPartsCount} {data.pendingPartsCount === 1 ? 'Repuesto Pendiente' : 'Repuestos Pendientes'}
+							{data.pendingPartsCount} {data.pendingPartsCount === 1 ? 'Compra Pendiente' : 'Compras Pendientes'}
 						</h3>
 						<p class="text-sm text-gray-600">
 							{data.pendingPartsCount === 1 ? 'Reparación esperando repuesto o compra' : `${data.pendingPartsCount} reparaciones esperando repuestos`}
@@ -163,7 +163,7 @@
 				</div>
 				<a href="/repuestos" 
 					class="px-6 py-3 bg-gradient-to-r from-purple-400 to-purple-500 text-white rounded-2xl font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300">
-					Ver repuestos
+					Ver compras
 				</a>
 			</div>
 		</div>
@@ -235,7 +235,7 @@
 		{#if data.user?.username === 'dueño' || data.user?.role === 'ADMIN'}
 		<div in:fly={{ y: 30, duration: 600, delay: 650 }} class="mb-8">
 			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-				<!-- Gestión de Repuestos -->
+				<!-- Gestión de Compras -->
 				<a href="/repuestos" 
 					class="group bg-gradient-to-br from-gray-50 to-gray-100 border border-orange-200 rounded-2xl p-6 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 relative">
 					<div class="flex flex-col items-center text-center space-y-3">
@@ -243,7 +243,7 @@
 							🛒
 						</div>
 						<div>
-							<p class="font-medium text-gray-900">Gestión Repuestos</p>
+							<p class="font-medium text-gray-900">Gestión Compras</p>
 							<p class="text-sm text-gray-600">Compras pendientes</p>
 						</div>
 						{#if data.pendingPartsCount > 0}
@@ -319,7 +319,7 @@
 					</div>
 				</a>
 				
-				<!-- Repuestos (solo para dueño) -->
+				<!-- Compras (solo para dueño) -->
 				{#if data.user?.username === 'dueño'}
 				<a href="/repuestos" 
 					class="group bg-white rounded-2xl p-4 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 relative">
@@ -327,7 +327,7 @@
 						<div class="w-12 h-12 bg-gradient-to-br from-orange-400 to-yellow-300 rounded-xl flex items-center justify-center text-white text-xl shadow-sm">
 							🛒
 						</div>
-						<p class="text-sm font-medium text-gray-900">Repuestos</p>
+						<p class="text-sm font-medium text-gray-900">Compras</p>
 						{#if data.pendingPartsCount > 0}
 							<span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">
 								{data.pendingPartsCount}

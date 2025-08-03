@@ -1,6 +1,6 @@
 import type { PageServerLoad } from './$types';
 import { redirect } from '@sveltejs/kit';
-import { prisma } from '$lib/server/prisma';
+import { db } from '$lib/server/db';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	// Verificar autenticación
@@ -67,7 +67,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		// Si es técnico, mostrar sus métricas personales con datos reales
 		if (locals.user.role === 'TECHNICIAN') {
 			// Obtener información del técnico
-			const technician = await prisma.user.findUnique({
+			const technician = await db.user.findUnique({
 				where: { id: locals.user.id },
 				select: { workShift: true, name: true }
 			});
@@ -81,7 +81,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			const monthlyRevenueGoal = isHalfTime ? 1000000 : 2000000;
 
 			// Obtener reparaciones reales del técnico para el periodo
-			const technicianRepairs = await prisma.repair.findMany({
+			const technicianRepairs = await db.repair.findMany({
 				where: { 
 					technicianId: locals.user.id,
 					receivedDate: {
@@ -152,7 +152,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			const evaluation = getAdjustedEvaluation(periodCompleted, monthlyGoal, workDaysElapsed, workDaysInPeriod);
 
 			// Obtener estadísticas de equipos por categoría para el técnico
-			const technicianDeviceStats = await prisma.repair.groupBy({
+			const technicianDeviceStats = await db.repair.groupBy({
 				by: ['deviceType'],
 				where: {
 					technicianId: locals.user.id,
@@ -210,7 +210,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		}
 
 		// Para admin/dueño - vista general con datos reales
-		const technicians = await prisma.user.findMany({
+		const technicians = await db.user.findMany({
 			where: { role: 'TECHNICIAN' },
 			include: {
 				repairOrders: {
@@ -295,7 +295,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		};
 
 		// Estadísticas generales del periodo
-		const allRepairs = await prisma.repair.count({
+		const allRepairs = await db.repair.count({
 			where: {
 				receivedDate: {
 					gte: periodStart,
@@ -304,7 +304,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			}
 		});
 		
-		const activeRepairs = await prisma.repair.count({
+		const activeRepairs = await db.repair.count({
 			where: {
 				receivedDate: {
 					gte: periodStart,
@@ -317,7 +317,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		});
 
 		// Obtener estadísticas de equipos por categoría
-		const deviceStats = await prisma.repair.groupBy({
+		const deviceStats = await db.repair.groupBy({
 			by: ['deviceType'],
 			where: {
 				receivedDate: {
@@ -338,7 +338,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		})).sort((a, b) => b.count - a.count);
 
 		// Obtener años disponibles para el selector
-		const oldestRepair = await prisma.repair.findFirst({
+		const oldestRepair = await db.repair.findFirst({
 			orderBy: { receivedDate: 'asc' },
 			select: { receivedDate: true }
 		});

@@ -8,7 +8,7 @@ import {
 	recordFailedAttempt,
 	clearLoginAttempts
 } from '$lib/server/simple-auth';
-import { prisma } from '$lib/server/prisma';
+import { db } from '$lib/server/db';
 
 export const actions: Actions = {
 	default: async ({ request, cookies }) => {
@@ -32,7 +32,7 @@ export const actions: Actions = {
 			clearLoginAttempts(username);
 			
 			// Obtener el ID del usuario de la base de datos
-			const dbUser = await prisma.user.findUnique({
+			const dbUser = await db.user.findUnique({
 				where: { username },
 				select: { id: true }
 			});

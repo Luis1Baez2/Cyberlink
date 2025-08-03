@@ -1,10 +1,10 @@
 import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
-import { prisma } from '$lib/server/prisma';
+import { db } from '$lib/server/db';
 
 export const load: PageServerLoad = async ({ params }) => {
 	try {
-		const repair = await prisma.repair.findUnique({
+		const repair = await db.repair.findUnique({
 			where: {
 				id: params.id
 			},

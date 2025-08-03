@@ -1,18 +1,18 @@
 import type { PageServerLoad, Actions } from './$types';
 import { redirect, fail } from '@sveltejs/kit';
-import { prisma } from '$lib/server/prisma';
+import { db } from '$lib/server/db';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	try {
 		// Obtener lista de clientes
-		const customers = await prisma.customer.findMany({
+		const customers = await db.customer.findMany({
 			orderBy: {
 				name: 'asc'
 			}
 		});
 
 		// Obtener lista de técnicos
-		const technicians = await prisma.user.findMany({
+		const technicians = await db.user.findMany({
 			where: {
 				role: 'TECHNICIAN'
 			},
@@ -93,7 +93,7 @@ export const actions: Actions = {
 			
 			if (!customerId && customerName && customerPhone) {
 				// Primero buscar si ya existe un cliente con ese teléfono
-				const existingCustomer = await prisma.customer.findFirst({
+				const existingCustomer = await db.customer.findFirst({
 					where: {
 						phone: customerPhone
 					}
@@ -117,7 +117,7 @@ export const actions: Actions = {
 					
 					// Solo actualizar si hay cambios
 					if (Object.keys(updateData).length > 0) {
-						await prisma.customer.update({
+						await db.customer.update({
 							where: { id: existingCustomer.id },
 							data: updateData
 						});
@@ -142,14 +142,14 @@ export const actions: Actions = {
 					}
 					
 					try {
-						const newCustomer = await prisma.customer.create({
+						const newCustomer = await db.customer.create({
 							data: customerData
 						});
 						finalCustomerId = newCustomer.id;
 					} catch (createError: any) {
 						// Si el error es por email duplicado, buscar el cliente con ese email
 						if (createError.code === 'P2002' && createError.meta?.target?.includes('email')) {
-							const existingCustomerByEmail = await prisma.customer.findFirst({
+							const existingCustomerByEmail = await db.customer.findFirst({
 								where: {
 									email: customerEmail
 								}
@@ -157,7 +157,7 @@ export const actions: Actions = {
 							
 							if (existingCustomerByEmail) {
 								// Actualizar los datos del cliente existente
-								await prisma.customer.update({
+								await db.customer.update({
 									where: { id: existingCustomerByEmail.id },
 									data: {
 										name: customerName,
@@ -181,7 +181,7 @@ export const actions: Actions = {
 			}
 
 			// Generar número de orden único
-			const lastRepair = await prisma.repair.findFirst({
+			const lastRepair = await db.repair.findFirst({
 				orderBy: {
 					createdAt: 'desc'
 				}
@@ -199,7 +199,7 @@ export const actions: Actions = {
 			const repairNumber = nextNumber.toString().padStart(6, '0'); // Formato: 000001, 000002, etc.
 
 			// Crear la reparación
-			const repair = await prisma.repair.create({
+			const repair = await db.repair.create({
 				data: {
 					repairNumber,
 					customerId: finalCustomerId,

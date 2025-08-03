@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { prisma } from '$lib/server/db';
+import { db } from '$lib/server/db';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
 	// Verificar autenticación
@@ -19,7 +19,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		}
 
 		// Obtener la reparación actual
-		const repair = await prisma.repair.findUnique({
+		const repair = await db.repair.findUnique({
 			where: { id: repairId },
 			include: { technician: true }
 		});
@@ -38,7 +38,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		}
 
 		// Actualizar el estado
-		const updatedRepair = await prisma.repair.update({
+		const updatedRepair = await db.repair.update({
 			where: { id: repairId },
 			data: { 
 				status: newStatus,
@@ -47,7 +47,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		});
 
 		// Crear nota en el historial
-		await prisma.repairNote.create({
+		await db.note.create({
 			data: {
 				text: `Estado cambiado a: ${newStatus}`,
 				repairId: repairId,

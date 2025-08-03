@@ -24,22 +24,25 @@ model User {
 }
 
 model Category {
-  id          String    @id @default(cuid())
-  name        String    @unique
+  id          Int        @id @default(autoincrement())
+  name        String     @unique
   description String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  parentId    Int?
+  parent      Category?  @relation("CategoryToCategory", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryToCategory")
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
   products    Product[]
 }
 
 model Product {
-  id          String              @id @default(cuid())
+  id          Int                 @id @default(autoincrement())
   code        String              @unique
   name        String
   description String?
   brand       String?
   model       String?
-  categoryId  String
+  categoryId  Int
   price       Float
   cost        Float
   stock       Int                 @default(0)
@@ -48,10 +51,11 @@ model Product {
   imageUrl    String?
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
-  movements   InventoryMovement[]
-  orderItems  OrderItem[]
-  category    Category            @relation(fields: [categoryId], references: [id])
-  repairParts RepairPart[]
+  movements            InventoryMovement[]
+  orderItems           OrderItem[]
+  category             Category               @relation(fields: [categoryId], references: [id])
+  repairParts          RepairPart[]
+  purchaseNotifications PurchaseNotification[]
 }
 
 model Customer {
@@ -68,7 +72,7 @@ model Customer {
 }
 
 model Order {
-  id          String      @id @default(cuid())
+  id          Int         @id @default(autoincrement())
   orderNumber String      @unique
   customerId  String
   userId      String
@@ -87,8 +91,8 @@ model Order {
 
 model OrderItem {
   id        String  @id @default(cuid())
-  orderId   String
-  productId String
+  orderId   Int
+  productId Int
   quantity  Int
   price     Float
   total     Float
@@ -136,7 +140,7 @@ model Repair {
 model RepairPart {
   id        String   @id @default(cuid())
   repairId  String
-  productId String?
+  productId Int?
   name      String
   quantity  Int
   price     Float
@@ -167,7 +171,7 @@ model RepairStatusHistory {
 
 model InventoryMovement {
   id            String   @id @default(cuid())
-  productId     String
+  productId     Int
   type          String
   quantity      Int
   previousStock Int
@@ -178,4 +182,16 @@ model InventoryMovement {
   createdAt     DateTime @default(now())
   user          User     @relation(fields: [userId], references: [id])
   product       Product  @relation(fields: [productId], references: [id])
+}
+
+model PurchaseNotification {
+  id           Int      @id @default(autoincrement())
+  productId    Int
+  quantity     Int
+  purchaseLink String?
+  notes        String?
+  status       String   @default("PENDING") // PENDING, ORDERED, RECEIVED
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  product      Product  @relation(fields: [productId], references: [id])
 }

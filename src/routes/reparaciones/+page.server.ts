@@ -1,6 +1,6 @@
 import type { PageServerLoad } from './$types';
 import { redirect } from '@sveltejs/kit';
-import { prisma } from '$lib/server/prisma';
+import { db } from '$lib/server/db';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	// Verificar autenticación
@@ -19,7 +19,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 		
 		if (locals.user.role === 'TECHNICIAN') {
 			// Los técnicos solo ven sus reparaciones asignadas que NO estén terminadas o entregadas
-			repairs = await prisma.repair.findMany({
+			repairs = await db.repair.findMany({
 				where: {
 					technicianId: locals.user.id,
 					NOT: {
@@ -38,7 +38,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 			});
 		} else {
 			// Admin y Manager ven todas las reparaciones
-			repairs = await prisma.repair.findMany({
+			repairs = await db.repair.findMany({
 				include: {
 					customer: true,
 					technician: true
@@ -52,7 +52,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 		// Obtener lista de técnicos para el filtro (solo para admin y manager)
 		let technicians = [];
 		if (['ADMIN', 'MANAGER'].includes(locals.user.role)) {
-			technicians = await prisma.user.findMany({
+			technicians = await db.user.findMany({
 				where: { role: 'TECHNICIAN' },
 				select: {
 					id: true,

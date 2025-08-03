@@ -139,29 +139,47 @@
 								<span class="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-mono">
 									#{repair.repairNumber}
 								</span>
+								{#if repair.deviceType === 'INVENTARIO'}
+									<span class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
+										📦 Reposición de Inventario
+									</span>
+								{/if}
 								<h3 class="text-lg font-medium text-gray-900">
-									{repair.deviceType} {repair.brand} {repair.model}
+									{#if repair.deviceType === 'INVENTARIO'}
+										{repair.model}
+									{:else}
+										{repair.deviceType} {repair.brand} {repair.model}
+									{/if}
 								</h3>
 							</div>
 							
 							<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-								<div>
-									<p class="text-sm text-gray-600">Cliente:</p>
-									<p class="font-medium text-gray-900">{repair.customer.name}</p>
-								</div>
-								<div>
-									<p class="text-sm text-gray-600">Técnico:</p>
-									<p class="font-medium text-gray-900">{repair.technician?.name || 'Sin asignar'}</p>
-								</div>
-								<div>
-									<p class="text-sm text-gray-600">Problema:</p>
+								{#if repair.deviceType !== 'INVENTARIO'}
+									<div>
+										<p class="text-sm text-gray-600">Cliente:</p>
+										<p class="font-medium text-gray-900">{repair.customer.name}</p>
+									</div>
+									<div>
+										<p class="text-sm text-gray-600">Técnico:</p>
+										<p class="font-medium text-gray-900">{repair.technician?.name || 'Sin asignar'}</p>
+									</div>
+								{/if}
+								<div class="{repair.deviceType === 'INVENTARIO' ? 'md:col-span-2' : ''}">
+									<p class="text-sm text-gray-600">{repair.deviceType === 'INVENTARIO' ? 'Detalles de stock:' : 'Problema:'}</p>
 									<p class="font-medium text-gray-900">{repair.issue}</p>
 								</div>
 								<div>
-									<p class="text-sm text-gray-600">Fecha de recepción:</p>
+									<p class="text-sm text-gray-600">Fecha de solicitud:</p>
 									<p class="font-medium text-gray-900">{formatDate(repair.receivedDate)}</p>
 								</div>
 							</div>
+							
+							{#if repair.diagnosis}
+							<div class="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+								<p class="text-sm text-gray-600 dark:text-gray-400 mb-1">{repair.deviceType === 'INVENTARIO' ? 'Información del solicitante:' : 'Diagnóstico:'}</p>
+								<p class="font-medium text-gray-900 dark:text-gray-100">{repair.diagnosis}</p>
+							</div>
+							{/if}
 							
 							{#if repair.partsDescription}
 							<div class="mb-4">
@@ -170,12 +188,15 @@
 							</div>
 							{/if}
 							
-							{#if repair.purchaseLink}
-							<div class="mb-4">
-								<p class="text-sm text-gray-600">Link de compra:</p>
+							{#if repair.purchaseLink && repair.purchaseLink.trim() !== ''}
+							<div class="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+								<p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Link de compra sugerido:</p>
 								<a href={repair.purchaseLink} target="_blank" 
-									class="text-blue-600 hover:text-blue-800 underline">
-									Ver producto 🔗
+									class="inline-flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline font-medium">
+									<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+									</svg>
+									Ver producto en línea
 								</a>
 							</div>
 							{/if}

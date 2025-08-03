@@ -26,9 +26,15 @@
 		IN_REPAIR: { label: 'En reparación', color: 'bg-indigo-100 text-indigo-800', icon: '🔧' },
 		WAITING_PARTS: { label: 'Espera de repuesto', color: 'bg-yellow-100 text-yellow-800', icon: '📦' },
 		COMPLETED: { label: 'Terminado', color: 'bg-green-100 text-green-800', icon: '✅' },
+		DELIVERED: { label: 'Entregado', color: 'bg-purple-100 text-purple-800', icon: '🏠' },
 		CANCELLED: { label: 'Cancelado', color: 'bg-red-100 text-red-800', icon: '❌' },
 		RETIRADO: { label: 'Retirado', color: 'bg-purple-100 text-purple-800', icon: '🏠' }
 	};
+
+	// Función helper para obtener estado seguro
+	function getStatusInfo(status) {
+		return statusMap[status] || { label: status, color: 'bg-gray-100 text-gray-800', icon: '❓' };
+	}
 	
 	// Estadísticas (excluyendo retiradas y canceladas para técnicos)
 	$: stats = {
@@ -519,15 +525,15 @@
 										{:else}
 											<button
 												on:click|stopPropagation={() => changingStatusFor = repair.id}
-												class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {statusMap[repair.status].color} hover:opacity-80 cursor-pointer transition-opacity"
+												class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {getStatusInfo(repair.status).color} hover:opacity-80 cursor-pointer transition-opacity"
 												title="Click para cambiar estado"
 											>
-												{statusMap[repair.status].icon} {statusMap[repair.status].label}
+												{getStatusInfo(repair.status).icon} {getStatusInfo(repair.status).label}
 											</button>
 										{/if}
 									{:else}
-										<span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {statusMap[repair.status].color}">
-											{statusMap[repair.status].icon} {statusMap[repair.status].label}
+										<span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {getStatusInfo(repair.status).color}">
+											{getStatusInfo(repair.status).icon} {getStatusInfo(repair.status).label}
 										</span>
 									{/if}
 								</div>
@@ -640,15 +646,15 @@
 										{:else}
 											<button
 												on:click|stopPropagation={() => changingStatusFor = repair.id}
-												class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {statusMap[repair.status].color} hover:opacity-80 cursor-pointer transition-opacity"
+												class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {getStatusInfo(repair.status).color} hover:opacity-80 cursor-pointer transition-opacity"
 												title="Click para cambiar estado"
 											>
-												{statusMap[repair.status].label}
+												{getStatusInfo(repair.status).label}
 											</button>
 										{/if}
 									{:else}
-										<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {statusMap[repair.status].color}">
-											{statusMap[repair.status].label}
+										<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {getStatusInfo(repair.status).color}">
+											{getStatusInfo(repair.status).label}
 										</span>
 									{/if}
 								</td>

@@ -77,7 +77,7 @@ async function main() {
 
 	// Crear clientes de ejemplo
 	const customer1 = await prisma.customer.upsert({
-		where: { email: 'juan.perez@email.com' },
+		where: { phone: '555-0123' },
 		update: {},
 		create: {
 			name: 'Juan Pérez',
@@ -88,7 +88,7 @@ async function main() {
 	});
 
 	const customer2 = await prisma.customer.upsert({
-		where: { email: 'maria.garcia@email.com' },
+		where: { phone: '555-0124' },
 		update: {},
 		create: {
 			name: 'María García',
@@ -98,8 +98,10 @@ async function main() {
 		}
 	});
 
-	const customer3 = await prisma.customer.create({
-		data: {
+	const customer3 = await prisma.customer.upsert({
+		where: { phone: '555-0125' },
+		update: {},
+		create: {
 			name: 'Pedro López',
 			phone: '555-0125',
 			address: 'Plaza Mayor 789, Ciudad'
@@ -107,7 +109,7 @@ async function main() {
 	});
 
 	const customer4 = await prisma.customer.upsert({
-		where: { email: 'ana.martinez@email.com' },
+		where: { phone: '555-0126' },
 		update: {},
 		create: {
 			name: 'Ana Martínez',
@@ -117,7 +119,7 @@ async function main() {
 	});
 
 	const customer5 = await prisma.customer.upsert({
-		where: { email: 'roberto.silva@email.com' },
+		where: { phone: '555-0127' },
 		update: {},
 		create: {
 			name: 'Roberto Silva',

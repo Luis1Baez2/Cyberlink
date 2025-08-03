@@ -1,6 +1,6 @@
 import type { PageServerLoad, Actions } from './$types';
 import { redirect } from '@sveltejs/kit';
-import { prisma } from '$lib/server/prisma';
+import { db } from '$lib/server/db';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user) {
@@ -37,7 +37,7 @@ export const actions: Actions = {
 		}
 
 		try {
-			const customer = await prisma.customer.create({
+			const customer = await db.customer.create({
 				data: {
 					name,
 					phone,

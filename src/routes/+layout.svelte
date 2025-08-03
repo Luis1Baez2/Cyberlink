@@ -39,10 +39,11 @@
 	// Rutas del menú
 	const menuItems = [
 		{ href: '/', label: 'Inicio', icon: '🏠', roles: ['ADMIN', 'MANAGER', 'EMPLOYEE'] },
-		{ href: '/reparaciones', label: 'Reparaciones', icon: '🔧', roles: ['ADMIN', 'MANAGER', 'EMPLOYEE', 'TECHNICIAN'] },
 		{ href: '/inventario', label: 'Inventario', icon: '📦', roles: ['ADMIN', 'MANAGER', 'EMPLOYEE'] },
+		{ href: '/facturacion', label: 'Facturación', icon: '💰', roles: ['ADMIN', 'MANAGER', 'EMPLOYEE'] },
+		{ href: '/reparaciones', label: 'Reparaciones', icon: '🔧', roles: ['ADMIN', 'MANAGER', 'EMPLOYEE', 'TECHNICIAN'] },
 		{ href: '/clientes', label: 'Clientes', icon: '👥', roles: ['ADMIN', 'MANAGER', 'EMPLOYEE'] },
-		{ href: '/repuestos', label: 'Repuestos', icon: '🛒', roles: ['ADMIN'], special: 'dueño' },
+		{ href: '/repuestos', label: 'Compras', icon: '🛒', roles: ['ADMIN'], special: 'dueño' },
 		{ href: '/metricas', label: 'Métricas', icon: '📊', roles: ['ADMIN', 'MANAGER', 'TECHNICIAN'] },
 		{ href: '/usuarios', label: 'Usuarios', icon: '👤', roles: ['ADMIN'] }
 	];

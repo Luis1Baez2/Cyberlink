@@ -1,6 +1,6 @@
 import type { PageServerLoad, Actions } from './$types';
 import { redirect } from '@sveltejs/kit';
-import { prisma } from '$lib/server/prisma';
+import { db } from '$lib/server/db';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user) {
@@ -12,7 +12,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 		throw redirect(302, '/');
 	}
 
-	const customers = await prisma.customer.findMany({
+	const customers = await db.customer.findMany({
 		include: {
 			_count: {
 				select: {
@@ -45,7 +45,7 @@ export const actions: Actions = {
 		const customerId = formData.get('customerId') as string;
 
 		try {
-			await prisma.customer.delete({
+			await db.customer.delete({
 				where: { id: customerId }
 			});
 			return { success: true };
