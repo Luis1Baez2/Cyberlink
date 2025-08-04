@@ -17,7 +17,7 @@
   "license": "ISC",
   "type": "module",
   "prisma": {
-    "seed": "node prisma/seed.js"
+    "seed": "node prisma/seed-minimal.js"
   },
   "devDependencies": {
     "@sveltejs/adapter-auto": "^6.0.1",
