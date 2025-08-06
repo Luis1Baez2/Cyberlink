@@ -94,7 +94,6 @@
 		notificationProduct = null;
 	}
 
-
 	// Iconos SVG minimalistas para cada categoría de hardware
 	const categoryIcons = {
 		'Notebooks': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-6 h-6">
@@ -182,9 +181,9 @@
 
 	<!-- Contenido principal con margen negativo para superponer -->
 	<div class="relative z-10 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 -mt-8 pb-12">
-		<!-- Filtros por categoría con menú desplegable -->
+		<!-- Filtros simples -->
 		<div class="bg-white rounded-lg shadow p-6 mb-6">
-			<h3 class="text-lg font-medium text-gray-900 mb-4">Filtrar por Categoría</h3>
+			<h3 class="text-lg font-medium text-gray-900 mb-4">Filtros</h3>
 			<div class="flex flex-wrap gap-3">
 				<!-- Filtro "Todos" -->
 				<button
@@ -198,44 +197,6 @@
 					<span class="font-medium">Todos</span>
 					<span class="text-sm">({data.products.length})</span>
 				</button>
-
-				<!-- Filtros por categoría principal con submenú -->
-				{#each data.categories as category}
-					<div class="relative group">
-						<button
-							on:click={() => filterByCategory(category.id)}
-							class="px-6 py-3 rounded-lg border-2 transition-all flex items-center gap-2 
-								{data.selectedCategory == category.id ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 hover:border-gray-300 bg-white'}"
-						>
-							<span class="font-medium">{category.name}</span>
-							<span class="text-sm">({data.categoryStats[category.id] || 0})</span>
-							{#if category.children && category.children.length > 0}
-								<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-								</svg>
-							{/if}
-						</button>
-						
-						<!-- Submenú desplegable -->
-						{#if category.children && category.children.length > 0}
-							<div class="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 
-								opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-								<div class="py-2">
-									{#each category.children as subcategory}
-										<button
-											on:click={() => filterByCategory(subcategory.id)}
-											class="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center justify-between
-												{data.selectedCategory == subcategory.id ? 'bg-blue-50 text-blue-700' : ''}"
-										>
-											<span class="text-sm">{subcategory.name}</span>
-											<span class="text-xs text-gray-500">({data.categoryStats[subcategory.id] || 0})</span>
-										</button>
-									{/each}
-								</div>
-							</div>
-						{/if}
-					</div>
-				{/each}
 
 				<!-- Filtro de stock bajo -->
 				<div class="relative">
@@ -371,36 +332,16 @@
 							</div>
 
 							<div>
-								<label for="categoryId" class="block text-sm font-medium text-gray-700">Categoría</label>
-								<select
-									name="categoryId"
-									id="categoryId"
+								<label for="category" class="block text-sm font-medium text-gray-700">Categoría</label>
+								<input
+									type="text"
+									name="category"
+									id="category"
+									value={editingProduct?.category?.name || ''}
 									required
+									placeholder="Ej: Hardware, Periféricos, Accesorios, etc."
 									class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-								>
-									<option value="">Seleccionar categoría</option>
-									{#each data.categories as category}
-										<optgroup label={category.name}>
-											{#if category.children && category.children.length > 0}
-												{#each category.children as subcategory}
-													<option
-														value={subcategory.id}
-														selected={editingProduct?.categoryId === subcategory.id}
-													>
-														{subcategory.name}
-													</option>
-												{/each}
-											{:else}
-												<option
-													value={category.id}
-													selected={editingProduct?.categoryId === category.id}
-												>
-													{category.name}
-												</option>
-											{/if}
-										</optgroup>
-									{/each}
-								</select>
+								/>
 							</div>
 
 							<div>

@@ -3,132 +3,74 @@ import { db } from '$lib/server/db';
 import { fail } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
-	const selectedCategory = url.searchParams.get('category') || 'all';
 	const searchTerm = url.searchParams.get('search') || '';
 	const lowStockLimit = url.searchParams.get('lowStock') ? parseInt(url.searchParams.get('lowStock')) : null;
 	
-	// Construir filtro basado en la categoría seleccionada
-	let productFilter = {};
+	// Construir filtro basado en búsqueda y stock
+	let productFilter: any = {};
 	
 	// Agregar filtro de búsqueda si existe
 	if (searchTerm) {
 		productFilter = {
 			OR: [
-				{ code: { contains: searchTerm } },
-				{ name: { contains: searchTerm } },
-				{ category: { name: { contains: searchTerm } } }
+				{ codigo: { contains: searchTerm } },
+				{ nombre: { contains: searchTerm } },
+				{ categoria: { nombre: { contains: searchTerm } } }
 			]
 		};
-	}
-	
-	// Combinar con filtro de categoría si existe
-	if (selectedCategory !== 'all') {
-		const categoryId = parseInt(selectedCategory);
-		if (!isNaN(categoryId)) {
-			// Buscar por ID de categoría o subcategoría
-			const category = await db.category.findUnique({
-				where: { id: categoryId },
-				include: { children: true }
-			});
-			
-			if (category) {
-				const categoryFilter = {};
-				if (category.children.length > 0) {
-					// Es una categoría padre, buscar en todas sus subcategorías
-					const childIds = category.children.map(c => c.id);
-					categoryFilter.categoryId = { in: [category.id, ...childIds] };
-				} else {
-					// Es una subcategoría o categoría sin hijos
-					categoryFilter.categoryId = categoryId;
-				}
-				
-				// Combinar filtros si hay búsqueda
-				if (searchTerm) {
-					productFilter = {
-						AND: [productFilter, categoryFilter]
-					};
-				} else {
-					productFilter = categoryFilter;
-				}
-			}
-		}
 	}
 
 	// Agregar filtro de stock bajo si existe
 	if (lowStockLimit !== null && lowStockLimit >= 0) {
 		const stockFilter = { stock: { lte: lowStockLimit } };
 		if (Object.keys(productFilter).length > 0) {
-			if (productFilter.AND) {
-				productFilter.AND.push(stockFilter);
-			} else {
-				productFilter = { AND: [productFilter, stockFilter] };
-			}
+			productFilter = { AND: [productFilter, stockFilter] };
 		} else {
 			productFilter = stockFilter;
 		}
 	}
 
-	const products = await db.product.findMany({
+	const rawProducts = await db.producto.findMany({
 		where: productFilter,
 		include: {
-			category: true
+			categoria: true
 		},
 		orderBy: {
-			createdAt: 'desc'
+			creadoEn: 'desc'
 		}
 	});
-
-	// Obtener categorías con estructura jerárquica
-	const categories = await db.category.findMany({
-		where: { parentId: null }, // Solo categorías principales
-		include: {
-			children: {
-				orderBy: { name: 'asc' }
-			}
-		},
-		orderBy: {
-			name: 'asc'
-		}
-	});
-
-	// Obtener todas las categorías para el select del formulario
-	const allCategories = await db.category.findMany({
-		orderBy: {
-			name: 'asc'
-		}
-	});
-
-	// Estadísticas por categoría
-	const categoryStats = {};
 	
-	// Estadísticas para categorías principales (incluyendo subcategorías)
-	for (const category of categories) {
-		const childIds = category.children.map(c => c.id);
-		const count = await db.product.count({
-			where: {
-				categoryId: { in: [category.id, ...childIds] }
-			}
-		});
-		categoryStats[category.id] = count;
-		
-		// Estadísticas para subcategorías
-		for (const child of category.children) {
-			const childCount = await db.product.count({
-				where: { categoryId: child.id }
-			});
-			categoryStats[child.id] = childCount;
-		}
-	}
+	// Mapear productos del español al inglés para el frontend
+	const products = rawProducts.map(p => ({
+		id: p.id,
+		code: p.codigo,
+		name: p.nombre,
+		description: p.descripcion,
+		brand: p.marca,
+		model: p.modelo,
+		categoryId: p.categoriaId,
+		price: p.precio,
+		cost: p.costo,
+		stock: p.stock,
+		minStock: p.stockMinimo,
+		status: p.estado,
+		imageUrl: p.urlImagen,
+		createdAt: p.creadoEn,
+		updatedAt: p.actualizadoEn,
+		category: p.categoria ? {
+			id: p.categoria.id,
+			name: p.categoria.nombre,
+			description: p.categoria.descripcion,
+			parentId: p.categoria.padreId
+		} : null
+	}));
 
 	return {
 		user: locals.user,
 		products,
-		categories,
-		allCategories,
-		selectedCategory,
 		searchTerm,
 		lowStockLimit,
-		categoryStats
+		selectedCategory: 'all'
 	};
 };
 
@@ -136,35 +78,56 @@ export const actions: Actions = {
 	create: async ({ request }) => {
 		const data = await request.formData();
 		const name = data.get('name')?.toString();
-		const categoryId = parseInt(data.get('categoryId')?.toString() || '0');
+		const categoryName = data.get('category')?.toString();
 		const price = parseFloat(data.get('price')?.toString() || '0');
 		const cost = parseFloat(data.get('cost')?.toString() || '0');
 		const stock = parseInt(data.get('stock')?.toString() || '0');
 		const minStock = parseInt(data.get('minStock')?.toString() || '0');
 
-		if (!name || !categoryId || categoryId === 0) {
+		if (!name || !categoryName) {
 			return fail(400, { error: 'Nombre y categoría son obligatorios' });
 		}
 
 		try {
+			// Buscar o crear la categoría
+			let category = await db.categoria.findFirst({
+				where: { 
+					nombre: {
+						equals: categoryName,
+						mode: 'insensitive'
+					}
+				}
+			});
+
+			if (!category) {
+				// Crear nueva categoría si no existe
+				category = await db.categoria.create({
+					data: {
+						nombre: categoryName,
+						descripcion: `Categoría ${categoryName}`
+					}
+				});
+			}
+
 			// Generar código automático incremental
-			const lastProduct = await db.product.findFirst({
+			const lastProduct = await db.producto.findFirst({
 				orderBy: { id: 'desc' }
 			});
-			const nextCode = lastProduct ? (parseInt(lastProduct.code) + 1).toString().padStart(6, '0') : '000001';
+			const nextCode = lastProduct ? (parseInt(lastProduct.codigo) + 1).toString().padStart(6, '0') : '000001';
 
-			await db.product.create({
+			await db.producto.create({
 				data: {
-					code: nextCode,
-					name,
-					categoryId,
-					price,
-					cost,
-					stock,
-					minStock
+					codigo: nextCode,
+					nombre: name,
+					categoriaId: category.id,
+					precio: price,
+					costo: cost,
+					stock: stock,
+					stockMinimo: minStock
 				}
 			});
 		} catch (error) {
+			console.error('Error creando producto:', error);
 			return fail(400, { error: 'Error al crear el producto' });
 		}
 
@@ -175,29 +138,50 @@ export const actions: Actions = {
 		const data = await request.formData();
 		const id = data.get('id')?.toString();
 		const name = data.get('name')?.toString();
-		const categoryId = parseInt(data.get('categoryId')?.toString() || '0');
+		const categoryName = data.get('category')?.toString();
 		const price = parseFloat(data.get('price')?.toString() || '0');
 		const cost = parseFloat(data.get('cost')?.toString() || '0');
 		const stock = parseInt(data.get('stock')?.toString() || '0');
 		const minStock = parseInt(data.get('minStock')?.toString() || '0');
 
-		if (!id || !name || !categoryId || categoryId === 0) {
+		if (!id || !name || !categoryName) {
 			return fail(400, { error: 'Todos los campos son obligatorios' });
 		}
 
 		try {
-			await db.product.update({
+			// Buscar o crear la categoría
+			let category = await db.categoria.findFirst({
+				where: { 
+					nombre: {
+						equals: categoryName,
+						mode: 'insensitive'
+					}
+				}
+			});
+
+			if (!category) {
+				// Crear nueva categoría si no existe
+				category = await db.categoria.create({
+					data: {
+						nombre: categoryName,
+						descripcion: `Categoría ${categoryName}`
+					}
+				});
+			}
+
+			await db.producto.update({
 				where: { id: parseInt(id) },
 				data: {
-					name,
-					categoryId,
-					price,
-					cost,
-					stock,
-					minStock
+					nombre: name,
+					categoriaId: category.id,
+					precio: price,
+					costo: cost,
+					stock: stock,
+					stockMinimo: minStock
 				}
 			});
 		} catch (error) {
+			console.error('Error actualizando producto:', error);
 			return fail(400, { error: 'Error al actualizar el producto' });
 		}
 
@@ -213,7 +197,7 @@ export const actions: Actions = {
 		}
 
 		try {
-			await db.product.delete({
+			await db.producto.delete({
 				where: { id: parseInt(id) }
 			});
 		} catch (error) {
@@ -243,55 +227,61 @@ export const actions: Actions = {
 
 		try {
 			// Primero buscar o crear un cliente "SISTEMA" para notificaciones de inventario
-			let systemCustomer = await db.customer.findFirst({
-				where: { phone: 'SISTEMA' }
+			let systemCustomer = await db.cliente.findFirst({
+				where: { telefono: 'SISTEMA' }
 			});
 
 			if (!systemCustomer) {
-				systemCustomer = await db.customer.create({
+				systemCustomer = await db.cliente.create({
 					data: {
-						name: 'SISTEMA - Notificaciones de Inventario',
-						phone: 'SISTEMA',
-						email: null,
-						address: 'N/A'
+						nombre: 'SISTEMA - Notificaciones de Inventario',
+						telefono: 'SISTEMA',
+						correo: null,
+						direccion: 'N/A'
 					}
 				});
 			}
 
 			// Generar número de reparación único para notificación de inventario
-			const lastRepair = await db.repair.findFirst({
-				orderBy: { repairNumber: 'desc' }
+			const lastRepair = await db.reparacion.findFirst({
+				orderBy: { numeroReparacion: 'desc' }
 			});
-			const nextNumber = lastRepair ? (parseInt(lastRepair.repairNumber) + 1).toString().padStart(6, '0') : '000001';
+			const nextNumber = lastRepair ? (parseInt(lastRepair.numeroReparacion) + 1).toString().padStart(6, '0') : '000001';
 
 			// Crear una "reparación" especial para notificación de inventario
-			const repair = await db.repair.create({
+			const repair = await db.reparacion.create({
 				data: {
-					repairNumber: nextNumber,
-					customerId: systemCustomer.id,
-					deviceType: 'INVENTARIO',
-					brand: 'REPOSICIÓN',
-					model: productName,
-					issue: `Stock bajo del producto: ${productName} (Código: ${productCode}). Stock actual: ${currentStock}, Stock mínimo: ${minStock}`,
-					diagnosis: `Solicitado por: ${locals.user.name} (${locals.user.username}). Cantidad solicitada: ${quantity} unidades.${observations ? ' Observaciones: ' + observations : ''}`,
-					status: 'WAITING_PARTS',
-					partsStatus: 'PENDING',
-					estimatedCost: 0,
-					purchaseLink: purchaseLink || '',
-					partsDescription: `Reposición de inventario: ${productName} (${productCode}) - Cantidad solicitada: ${quantity} unidades`
+					numeroReparacion: nextNumber,
+					clienteId: systemCustomer.id,
+					tipoDispositivo: 'INVENTARIO',
+					marca: 'REPOSICIÓN',
+					modelo: productName,
+					problema: `Stock bajo del producto: ${productName} (Código: ${productCode}). Stock actual: ${currentStock}, Stock mínimo: ${minStock}`,
+					diagnostico: `Solicitado por: ${locals.user.name} (${locals.user.username}). Cantidad solicitada: ${quantity} unidades.${observations ? ' Observaciones: ' + observations : ''}`,
+					estado: 'ESPERANDO_REPUESTO',
+					estadoPartes: 'PENDIENTE',
+					costoEstimado: 0,
+					enlaceCompra: purchaseLink || '',
+					descripcionPartes: `Reposición de inventario: ${productName} (${productCode}) - Cantidad solicitada: ${quantity} unidades`
 				}
 			});
 
 			// Crear una nota con la información del solicitante
-			await db.note.create({
-				data: {
-					text: `📦 Solicitud de compra creada por ${locals.user.name}. Cantidad: ${quantity} unidades.${purchaseLink ? ' Link de compra proporcionado.' : ''}${observations ? ' Observaciones: ' + observations : ''}`,
-					repairId: repair.id,
-					authorId: locals.user.id
+			if (locals.user?.id) {
+				try {
+					await db.nota.create({
+						data: {
+							texto: `📦 Solicitud de compra creada por ${locals.user.name}. Cantidad: ${quantity} unidades.${purchaseLink ? ' Link de compra proporcionado.' : ''}${observations ? ' Observaciones: ' + observations : ''}`,
+							reparacionId: repair.id,
+							autorId: locals.user.id
+						}
+					});
+				} catch (noteError) {
+					console.log('⚠️ No se pudo crear la nota de notificación:', noteError);
 				}
-			});
+			}
 
-			console.log('✅ Notificación de inventario creada como reparación:', repair.repairNumber);
+			console.log('✅ Notificación de inventario creada como reparación:', repair.numeroReparacion);
 
 		} catch (error) {
 			console.error('❌ Error al crear notificación:', error);

@@ -37,13 +37,13 @@ export const actions: Actions = {
 		}
 
 		try {
-			const customer = await db.customer.create({
+			const customer = await db.cliente.create({
 				data: {
-					name,
-					phone,
-					email: email || null,
-					address: address || null,
-					taxId: taxId || null
+					nombre: name,
+					telefono: phone,
+					correo: email || null,
+					direccion: address || null,
+					cuit: taxId || null
 				}
 			});
 

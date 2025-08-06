@@ -13,40 +13,40 @@ async function main() {
 	const hashedPassword = await bcrypt.hash('1234', 10);
 	
 	// Crear usuario dueño
-	const owner = await prisma.user.upsert({
-		where: { username: 'dueño' },
-		update: { password: hashedPassword },
+	const owner = await prisma.usuario.upsert({
+		where: { nombreUsuario: 'dueño' },
+		update: { contrasena: hashedPassword },
 		create: {
-			username: 'dueño',
-			password: hashedPassword,
-			name: 'Dueño del Negocio',
-			role: 'ADMIN' // Temporalmente ADMIN hasta actualizar el schema
+			nombreUsuario: 'dueño',
+			contrasena: hashedPassword,
+			nombre: 'Dueño del Negocio',
+			rol: 'ADMIN' // Temporalmente ADMIN hasta actualizar el schema
 		}
 	});
-	console.log('Usuario dueño creado:', { username: owner.username });
+	console.log('Usuario dueño creado:', { username: owner.nombreUsuario });
 
 	// Crear usuario administrador
-	const admin = await prisma.user.upsert({
-		where: { username: 'admin' },
-		update: { password: hashedPassword },
+	const admin = await prisma.usuario.upsert({
+		where: { nombreUsuario: 'admin' },
+		update: { contrasena: hashedPassword },
 		create: {
-			username: 'admin',
-			password: hashedPassword,
-			name: 'Administrador',
-			role: 'ADMIN'
+			nombreUsuario: 'admin',
+			contrasena: hashedPassword,
+			nombre: 'Administrador',
+			rol: 'ADMIN'
 		}
 	});
-	console.log('Usuario admin creado:', { username: admin.username });
+	console.log('Usuario admin creado:', { username: admin.nombreUsuario });
 
 	// Crear usuario vendedor
-	const employee = await prisma.user.upsert({
-		where: { username: 'vendedor' },
-		update: { password: hashedPassword },
+	const employee = await prisma.usuario.upsert({
+		where: { nombreUsuario: 'vendedor' },
+		update: { contrasena: hashedPassword },
 		create: {
-			username: 'vendedor',
-			password: hashedPassword,
-			name: 'Vendedor de Prueba',
-			role: 'EMPLOYEE'
+			nombreUsuario: 'vendedor',
+			contrasena: hashedPassword,
+			nombre: 'Vendedor de Prueba',
+			rol: 'EMPLOYEE'
 		}
 	});
 	console.log('Usuario vendedor creado:', { username: employee.username });

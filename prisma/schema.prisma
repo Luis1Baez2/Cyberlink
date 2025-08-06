@@ -3,195 +3,219 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id             String              @id @default(cuid())
-  username       String              @unique
-  password       String
-  name           String
-  role           String              @default("EMPLOYEE")
-  workShift      String              @default("FULL_TIME")
-  recoveryEmail  String?
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
-  movements      InventoryMovement[]
-  notes          Note[]
-  salesOrders    Order[]
-  repairOrders   Repair[]
+model Usuario {
+  id                String                  @id @default(cuid())
+  nombreUsuario     String                  @unique @map("username")
+  contrasena        String                  @map("password")
+  nombre            String                  @map("name")
+  rol               String                  @default("EMPLEADO") @map("role")
+  turnoTrabajo      String                  @default("TIEMPO_COMPLETO") @map("workShift")
+  correoRecuperacion String?                @map("recoveryEmail")
+  creadoEn          DateTime                @default(now()) @map("createdAt")
+  actualizadoEn     DateTime                @updatedAt @map("updatedAt")
+  movimientos       MovimientoInventario[]
+  notas             Nota[]
+  ordenesVenta      Orden[]
+  ordenesReparacion Reparacion[]
+  
+  @@map("users")
 }
 
-model Category {
-  id          Int        @id @default(autoincrement())
-  name        String     @unique
-  description String?
-  parentId    Int?
-  parent      Category?  @relation("CategoryToCategory", fields: [parentId], references: [id])
-  children    Category[] @relation("CategoryToCategory")
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  products    Product[]
-}
-
-model Product {
-  id          Int                 @id @default(autoincrement())
-  code        String              @unique
-  name        String
-  description String?
-  brand       String?
-  model       String?
-  categoryId  Int
-  price       Float
-  cost        Float
-  stock       Int                 @default(0)
-  minStock    Int                 @default(0)
-  status      String              @default("ACTIVE")
-  imageUrl    String?
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
-  movements            InventoryMovement[]
-  orderItems           OrderItem[]
-  category             Category               @relation(fields: [categoryId], references: [id])
-  repairParts          RepairPart[]
-  purchaseNotifications PurchaseNotification[]
-}
-
-model Customer {
-  id        String   @id @default(cuid())
-  name      String
-  email     String?
-  phone     String   @unique
-  address   String?
-  taxId     String?  @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  orders    Order[]
-  repairs   Repair[]
-}
-
-model Order {
+model Categoria {
   id          Int         @id @default(autoincrement())
-  orderNumber String      @unique
-  customerId  String
-  userId      String
-  status      String      @default("PENDING")
-  subtotal    Float
-  tax         Float
-  discount    Float       @default(0)
+  nombre      String      @unique @map("name")
+  descripcion String?     @map("description")
+  padreId     Int?        @map("parentId")
+  padre       Categoria?  @relation("CategoriaACategoria", fields: [padreId], references: [id])
+  hijos       Categoria[] @relation("CategoriaACategoria")
+  creadoEn    DateTime    @default(now()) @map("createdAt")
+  actualizadoEn DateTime  @updatedAt @map("updatedAt")
+  productos   Producto[]
+  
+  @@map("categories")
+}
+
+model Producto {
+  id                    Int                     @id @default(autoincrement())
+  codigo                String                  @unique @map("code")
+  nombre                String                  @map("name")
+  descripcion           String?                 @map("description")
+  marca                 String?                 @map("brand")
+  modelo                String?                 @map("model")
+  categoriaId           Int                     @map("categoryId")
+  precio                Float                   @map("price")
+  costo                 Float                   @map("cost")
+  stock                 Int                     @default(0)
+  stockMinimo           Int                     @default(0) @map("minStock")
+  estado                String                  @default("ACTIVO") @map("status")
+  urlImagen             String?                 @map("imageUrl")
+  creadoEn              DateTime                @default(now()) @map("createdAt")
+  actualizadoEn         DateTime                @updatedAt @map("updatedAt")
+  movimientos           MovimientoInventario[]
+  itemsOrden            ItemOrden[]
+  categoria             Categoria               @relation(fields: [categoriaId], references: [id])
+  partesReparacion      ParteReparacion[]
+  notificacionesCompra  NotificacionCompra[]
+  
+  @@map("products")
+}
+
+model Cliente {
+  id            String        @id @default(cuid())
+  nombre        String        @map("name")
+  correo        String?       @map("email")
+  telefono      String        @unique @map("phone")
+  direccion     String?       @map("address")
+  rfc           String?       @unique @map("taxId")
+  creadoEn      DateTime      @default(now()) @map("createdAt")
+  actualizadoEn DateTime      @updatedAt @map("updatedAt")
+  ordenes       Orden[]
+  reparaciones  Reparacion[]
+  
+  @@map("customers")
+}
+
+model Orden {
+  id            Int         @id @default(autoincrement())
+  numeroOrden   String      @unique @map("orderNumber")
+  clienteId     String      @map("customerId")
+  usuarioId     String      @map("userId")
+  estado        String      @default("PENDIENTE") @map("status")
+  subtotal      Float
+  impuesto      Float       @map("tax")
+  descuento     Float       @default(0) @map("discount")
+  total         Float
+  notas         String?     @map("notes")
+  creadoEn      DateTime    @default(now()) @map("createdAt")
+  actualizadoEn DateTime    @updatedAt @map("updatedAt")
+  usuario       Usuario     @relation(fields: [usuarioId], references: [id])
+  cliente       Cliente     @relation(fields: [clienteId], references: [id])
+  items         ItemOrden[]
+  
+  @@map("orders")
+}
+
+model ItemOrden {
+  id          String    @id @default(cuid())
+  ordenId     Int       @map("orderId")
+  productoId  Int       @map("productId")
+  cantidad    Int       @map("quantity")
+  precio      Float     @map("price")
   total       Float
-  notes       String?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  user        User        @relation(fields: [userId], references: [id])
-  customer    Customer    @relation(fields: [customerId], references: [id])
-  items       OrderItem[]
+  producto    Producto  @relation(fields: [productoId], references: [id])
+  orden       Orden     @relation(fields: [ordenId], references: [id], onDelete: Cascade)
+  
+  @@map("order_items")
 }
 
-model OrderItem {
-  id        String  @id @default(cuid())
-  orderId   Int
-  productId Int
-  quantity  Int
-  price     Float
-  total     Float
-  product   Product @relation(fields: [productId], references: [id])
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+model Reparacion {
+  id                    String                    @id @default(cuid())
+  numeroReparacion      String                    @unique @map("repairNumber")
+  clienteId             String                    @map("customerId")
+  tecnicoId             String?                   @map("technicianId")
+  tipoDispositivo       String                    @map("deviceType")
+  marca                 String                    @map("brand")
+  modelo                String                    @map("model")
+  numeroSerie           String?                   @map("serialNumber")
+  problema              String                    @map("issue")
+  diagnostico           String?                   @map("diagnosis")
+  estado                String                    @default("SIN_ASIGNAR") @map("status")
+  prioridad             String                    @default("MEDIA") @map("priority")
+  costoEstimado         Float?                    @map("estimatedCost")
+  costoFinal            Float?                    @map("finalCost")
+  fechaRecibido         DateTime                  @default(now()) @map("receivedDate")
+  fechaEstimada         DateTime?                 @map("estimatedDate")
+  fechaEntrega          DateTime?                 @map("deliveryDate")
+  progreso              Int                       @default(0) @map("progress")
+  creadoEn              DateTime                  @default(now()) @map("createdAt")
+  actualizadoEn         DateTime                  @updatedAt @map("updatedAt")
+  enlaceCompra          String?                   @map("purchaseLink")
+  descripcionPartes     String?                   @map("partsDescription")
+  estadoPartes          String?                   @default("PENDIENTE") @map("partsStatus")
+  llegadaEstimada       DateTime?                 @map("estimatedArrival")
+  costoManoObra         Float?                    @map("laborCost")
+  costoPartes           Float?                    @map("partsCost")
+  trabajoRealizado      String?                   @map("workPerformed")
+  observacionesFinales  String?                   @map("finalObservations")
+  motivoCancelacion     String?                   @map("cancellationReason")
+  notas                 Nota[]
+  tecnico               Usuario?                  @relation(fields: [tecnicoId], references: [id])
+  cliente               Cliente                   @relation(fields: [clienteId], references: [id])
+  partes                ParteReparacion[]
+  historialEstado       HistorialEstadoReparacion[]
+  
+  @@map("repairs")
 }
 
-model Repair {
-  id            String                @id @default(cuid())
-  repairNumber  String                @unique
-  customerId    String
-  technicianId  String?
-  deviceType    String
-  brand         String
-  model         String
-  serialNumber  String?
-  issue         String
-  diagnosis     String?
-  status        String                @default("UNASSIGNED")
-  priority      String                @default("MEDIUM")
-  estimatedCost Float?
-  finalCost     Float?
-  receivedDate  DateTime              @default(now())
-  estimatedDate DateTime?
-  deliveryDate  DateTime?
-  progress      Int                   @default(0)
-  createdAt     DateTime              @default(now())
-  updatedAt     DateTime              @updatedAt
-  purchaseLink  String?
-  partsDescription String?
-  partsStatus   String?               @default("PENDING")
-  estimatedArrival DateTime?
-  laborCost     Float?
-  partsCost     Float?
-  workPerformed String?
-  finalObservations String?
-  cancellationReason String?
-  notes         Note[]
-  technician    User?                 @relation(fields: [technicianId], references: [id])
-  customer      Customer              @relation(fields: [customerId], references: [id])
-  parts         RepairPart[]
-  statusHistory RepairStatusHistory[]
+model ParteReparacion {
+  id          String      @id @default(cuid())
+  reparacionId String     @map("repairId")
+  productoId  Int?        @map("productId")
+  nombre      String      @map("name")
+  cantidad    Int         @map("quantity")
+  precio      Float       @map("price")
+  estado      String      @default("PENDIENTE") @map("status")
+  creadoEn    DateTime    @default(now()) @map("createdAt")
+  producto    Producto?   @relation(fields: [productoId], references: [id])
+  reparacion  Reparacion  @relation(fields: [reparacionId], references: [id], onDelete: Cascade)
+  
+  @@map("repair_parts")
 }
 
-model RepairPart {
-  id        String   @id @default(cuid())
-  repairId  String
-  productId Int?
-  name      String
-  quantity  Int
-  price     Float
-  status    String   @default("PENDING")
-  createdAt DateTime @default(now())
-  product   Product? @relation(fields: [productId], references: [id])
-  repair    Repair   @relation(fields: [repairId], references: [id], onDelete: Cascade)
+model Nota {
+  id          String      @id @default(cuid())
+  reparacionId String     @map("repairId")
+  autorId     String      @map("authorId")
+  texto       String      @map("text")
+  creadoEn    DateTime    @default(now()) @map("createdAt")
+  autor       Usuario     @relation(fields: [autorId], references: [id])
+  reparacion  Reparacion  @relation(fields: [reparacionId], references: [id], onDelete: Cascade)
+  
+  @@map("notes")
 }
 
-model Note {
-  id        String   @id @default(cuid())
-  repairId  String
-  authorId  String
-  text      String
-  createdAt DateTime @default(now())
-  author    User     @relation(fields: [authorId], references: [id])
-  repair    Repair   @relation(fields: [repairId], references: [id], onDelete: Cascade)
+model HistorialEstadoReparacion {
+  id          String      @id @default(cuid())
+  reparacionId String     @map("repairId")
+  estado      String      @map("status")
+  comentario  String?     @map("comment")
+  creadoEn    DateTime    @default(now()) @map("createdAt")
+  reparacion  Reparacion  @relation(fields: [reparacionId], references: [id], onDelete: Cascade)
+  
+  @@map("repair_status_history")
 }
 
-model RepairStatusHistory {
-  id        String   @id @default(cuid())
-  repairId  String
-  status    String
-  comment   String?
-  createdAt DateTime @default(now())
-  repair    Repair   @relation(fields: [repairId], references: [id], onDelete: Cascade)
+model MovimientoInventario {
+  id            String    @id @default(cuid())
+  productoId    Int       @map("productId")
+  tipo          String    @map("type")
+  cantidad      Int       @map("quantity")
+  stockAnterior Int       @map("previousStock")
+  stockNuevo    Int       @map("newStock")
+  razon         String?   @map("reason")
+  referencia    String?   @map("reference")
+  usuarioId     String    @map("userId")
+  creadoEn      DateTime  @default(now()) @map("createdAt")
+  usuario       Usuario   @relation(fields: [usuarioId], references: [id])
+  producto      Producto  @relation(fields: [productoId], references: [id])
+  
+  @@map("inventory_movements")
 }
 
-model InventoryMovement {
-  id            String   @id @default(cuid())
-  productId     Int
-  type          String
-  quantity      Int
-  previousStock Int
-  newStock      Int
-  reason        String?
-  reference     String?
-  userId        String
-  createdAt     DateTime @default(now())
-  user          User     @relation(fields: [userId], references: [id])
-  product       Product  @relation(fields: [productId], references: [id])
-}
-
-model PurchaseNotification {
-  id           Int      @id @default(autoincrement())
-  productId    Int
-  quantity     Int
-  purchaseLink String?
-  notes        String?
-  status       String   @default("PENDING") // PENDING, ORDERED, RECEIVED
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  product      Product  @relation(fields: [productId], references: [id])
+model NotificacionCompra {
+  id            Int       @id @default(autoincrement())
+  productoId    Int       @map("productId")
+  cantidad      Int       @map("quantity")
+  enlaceCompra  String?   @map("purchaseLink")
+  notas         String?   @map("notes")
+  estado        String    @default("PENDIENTE") @map("status") // PENDIENTE, ORDENADO, RECIBIDO
+  creadoEn      DateTime  @default(now()) @map("createdAt")
+  actualizadoEn DateTime  @updatedAt @map("updatedAt")
+  producto      Producto  @relation(fields: [productoId], references: [id])
+  
+  @@map("purchase_notifications")
 }

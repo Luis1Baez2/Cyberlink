@@ -11,6 +11,14 @@
 	let showCustomerDropdown = false;
 	let selectedCustomer = null;
 	let showNewCustomerForm = false;
+	let showNewCustomerModal = false;
+	
+	// Datos del nuevo cliente
+	let newCustomerName = '';
+	let newCustomerPhone = '';
+	let newCustomerEmail = '';
+	let newCustomerAddress = '';
+	let creatingCustomer = false;
 	
 	// Tipos de dispositivos comunes
 	const deviceTypes = [
@@ -138,6 +146,56 @@
 	}
 	
 	// Cargar términos y notas guardadas al iniciar
+	// Función para crear cliente desde el modal
+	async function createCustomerFromModal() {
+		if (!newCustomerName || !newCustomerPhone) {
+			alert('Por favor ingrese al menos nombre y teléfono del cliente');
+			return;
+		}
+		
+		creatingCustomer = true;
+		
+		try {
+			const response = await fetch('/api/customers/create', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					name: newCustomerName,
+					phone: newCustomerPhone,
+					email: newCustomerEmail || null,
+					address: newCustomerAddress || null
+				})
+			});
+			
+			if (response.ok) {
+				const newCustomer = await response.json();
+				
+				// Agregar el nuevo cliente a la lista
+				data.customers = [...data.customers, newCustomer];
+				
+				// Seleccionar automáticamente el nuevo cliente
+				selectCustomer(newCustomer);
+				
+				// Limpiar y cerrar el modal
+				newCustomerName = '';
+				newCustomerPhone = '';
+				newCustomerEmail = '';
+				newCustomerAddress = '';
+				showNewCustomerModal = false;
+			} else {
+				const error = await response.json();
+				alert(error.message || 'Error al crear el cliente');
+			}
+		} catch (error) {
+			console.error('Error creando cliente:', error);
+			alert('Error al crear el cliente');
+		} finally {
+			creatingCustomer = false;
+		}
+	}
+	
 	onMount(() => {
 		const savedTerms = localStorage.getItem('termsAndConditions');
 		const savedNotes = localStorage.getItem('predefinedNotes');
@@ -195,9 +253,16 @@
 		<div class="bg-white shadow-lg rounded-lg overflow-hidden">
 			<form method="POST" use:enhance={() => {
 				loading = true;
-				return async ({ update }) => {
-					await update();
-					loading = false;
+				return async ({ result, update }) => {
+					// Si la creación fue exitosa, el servidor enviará un redirect
+					if (result.type === 'redirect') {
+						// El redirect se manejará automáticamente
+						await update();
+					} else {
+						// Si hay error, actualizar normalmente
+						await update();
+						loading = false;
+					}
 				};
 			}}>
 				<div class="p-6 space-y-6">
@@ -275,74 +340,20 @@
 							</div>
 							
 							<!-- Crear nuevo cliente -->
-							<div>
-								<button
-									type="button"
-									on:click={() => showNewCustomerForm = !showNewCustomerForm}
-									class="text-purple-600 hover:text-purple-700 text-sm font-medium"
-								>
-									{showNewCustomerForm ? 'Cancelar' : 'Crear nuevo cliente'}
-								</button>
-								
-								{#if showNewCustomerForm}
-								<div class="mt-4 space-y-4 p-4 bg-gray-50 rounded-md">
-									<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-										<div>
-											<label for="customerName" class="block text-sm font-medium text-gray-700">
-												Nombre completo *
-											</label>
-											<input
-												type="text"
-												name="customerName"
-												id="customerName"
-												required={showNewCustomerForm && !selectedCustomer}
-												class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500"
-											/>
-										</div>
-										
-										<div>
-											<label for="customerPhone" class="block text-sm font-medium text-gray-700">
-												Teléfono *
-											</label>
-											<input
-												type="tel"
-												name="customerPhone"
-												id="customerPhone"
-												required={showNewCustomerForm && !selectedCustomer}
-												class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500"
-											/>
-										</div>
-										
-										<div>
-											<label for="customerEmail" class="block text-sm font-medium text-gray-700">
-												Email
-											</label>
-											<input
-												type="email"
-												name="customerEmail"
-												id="customerEmail"
-												class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500"
-											/>
-										</div>
-										
-										<div>
-											<label for="customerAddress" class="block text-sm font-medium text-gray-700">
-												Dirección
-											</label>
-											<input
-												type="text"
-												name="customerAddress"
-												id="customerAddress"
-												class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500"
-											/>
-										</div>
-									</div>
-								</div>
-								{/if}
-							</div>
+							<button
+								type="button"
+								on:click={() => showNewCustomerModal = true}
+								class="inline-flex items-center gap-2 text-purple-600 hover:text-purple-700 text-sm font-medium"
+							>
+								<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+								</svg>
+								Crear nuevo cliente
+							</button>
 							{/if}
 						</div>
 					</div>
+
 
 					<!-- Información del Dispositivo -->
 					<div class="border-t pt-6">
@@ -481,21 +492,9 @@
 						</div>
 						
 						<div class="mt-4">
-							<div class="flex items-center justify-between mb-2">
-								<label for="notes" class="block text-sm font-medium text-gray-700">
-									Notas adicionales
-								</label>
-								<button
-									type="button"
-									on:click={() => showNotesModal = true}
-									class="inline-flex items-center px-3 py-1 border border-purple-300 text-sm font-medium rounded-md text-purple-700 bg-purple-50 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
-								>
-									<svg class="-ml-0.5 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-									</svg>
-									Editar impresión y notas
-								</button>
-							</div>
+							<label for="notes" class="block text-sm font-medium text-gray-700">
+								Notas adicionales
+							</label>
 							<textarea
 								name="notes"
 								id="notes"
@@ -519,10 +518,10 @@
 					</button>
 					<button
 						type="submit"
-						disabled={loading || (!selectedCustomer && !showNewCustomerForm)}
+						disabled={loading}
 						class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-green-600 hover:from-purple-700 hover:to-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
 					>
-						{loading ? 'Guardando...' : 'Crear Reparación'}
+						{loading ? 'Guardando...' : 'Crear e Imprimir'}
 					</button>
 				</div>
 			</form>
@@ -654,6 +653,97 @@
 				<button
 					type="button"
 					on:click={() => showNotesModal = false}
+					class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+				>
+					Cancelar
+				</button>
+			</div>
+		</div>
+	</div>
+</div>
+{/if}
+
+<!-- Modal de crear nuevo cliente -->
+{#if showNewCustomerModal}
+<div class="fixed z-50 inset-0 overflow-y-auto">
+	<div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+		<div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" on:click={() => showNewCustomerModal = false}></div>
+
+		<div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+			<div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+				<h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+					Crear Nuevo Cliente
+				</h3>
+				
+				<div class="space-y-4">
+					<div>
+						<label class="block text-sm font-medium text-gray-700 mb-1">
+							Nombre *
+						</label>
+						<input
+							type="text"
+							bind:value={newCustomerName}
+							placeholder="Nombre del cliente"
+							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500"
+						/>
+					</div>
+					
+					<div>
+						<label class="block text-sm font-medium text-gray-700 mb-1">
+							Teléfono *
+						</label>
+						<input
+							type="text"
+							bind:value={newCustomerPhone}
+							placeholder="Número de teléfono"
+							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500"
+						/>
+					</div>
+					
+					<div>
+						<label class="block text-sm font-medium text-gray-700 mb-1">
+							Email
+						</label>
+						<input
+							type="email"
+							bind:value={newCustomerEmail}
+							placeholder="Correo electrónico (opcional)"
+							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500"
+						/>
+					</div>
+					
+					<div>
+						<label class="block text-sm font-medium text-gray-700 mb-1">
+							Dirección
+						</label>
+						<input
+							type="text"
+							bind:value={newCustomerAddress}
+							placeholder="Dirección (opcional)"
+							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500"
+						/>
+					</div>
+				</div>
+			</div>
+			
+			<div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+				<button
+					type="button"
+					on:click={createCustomerFromModal}
+					disabled={creatingCustomer || !newCustomerName || !newCustomerPhone}
+					class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-purple-600 text-base font-medium text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+				>
+					{creatingCustomer ? 'Creando...' : 'Crear Cliente'}
+				</button>
+				<button
+					type="button"
+					on:click={() => {
+						showNewCustomerModal = false;
+						newCustomerName = '';
+						newCustomerPhone = '';
+						newCustomerEmail = '';
+						newCustomerAddress = '';
+					}}
 					class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
 				>
 					Cancelar

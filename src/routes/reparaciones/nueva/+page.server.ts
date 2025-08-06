@@ -5,25 +5,39 @@ import { db } from '$lib/server/db';
 export const load: PageServerLoad = async ({ locals }) => {
 	try {
 		// Obtener lista de clientes
-		const customers = await db.customer.findMany({
+		const rawCustomers = await db.cliente.findMany({
 			orderBy: {
-				name: 'asc'
+				nombre: 'asc'
 			}
 		});
+		
+		// Mapear los datos del español al inglés para el frontend
+		const customers = rawCustomers.map(c => ({
+			id: c.id,
+			name: c.nombre,
+			phone: c.telefono,
+			email: c.correo,
+			address: c.direccion
+		}));
 
 		// Obtener lista de técnicos
-		const technicians = await db.user.findMany({
+		const rawTechnicians = await db.usuario.findMany({
 			where: {
-				role: 'TECHNICIAN'
+				rol: 'TECNICO'
 			},
 			select: {
 				id: true,
-				name: true
+				nombre: true
 			},
 			orderBy: {
-				name: 'asc'
+				nombre: 'asc'
 			}
 		});
+		
+		const technicians = rawTechnicians.map(t => ({
+			id: t.id,
+			name: t.nombre
+		}));
 
 		return {
 			user: locals.user,
@@ -93,31 +107,31 @@ export const actions: Actions = {
 			
 			if (!customerId && customerName && customerPhone) {
 				// Primero buscar si ya existe un cliente con ese teléfono
-				const existingCustomer = await db.customer.findFirst({
+				const existingCustomer = await db.cliente.findFirst({
 					where: {
-						phone: customerPhone
+						telefono: customerPhone
 					}
 				});
 				
 				if (existingCustomer) {
 					// Si existe, actualizar sus datos si es necesario
 					const updateData: any = {
-						name: customerName
+						nombre: customerName
 					};
 					
 					// Solo actualizar email si se proporciona y es diferente
-					if (customerEmail && customerEmail.trim() !== '' && existingCustomer.email !== customerEmail) {
-						updateData.email = customerEmail;
+					if (customerEmail && customerEmail.trim() !== '' && existingCustomer.correo !== customerEmail) {
+						updateData.correo = customerEmail;
 					}
 					
 					// Solo actualizar dirección si se proporciona
 					if (customerAddress && customerAddress.trim() !== '') {
-						updateData.address = customerAddress;
+						updateData.direccion = customerAddress;
 					}
 					
 					// Solo actualizar si hay cambios
 					if (Object.keys(updateData).length > 0) {
-						await db.customer.update({
+						await db.cliente.update({
 							where: { id: existingCustomer.id },
 							data: updateData
 						});
@@ -127,42 +141,42 @@ export const actions: Actions = {
 				} else {
 					// Si no existe, crear nuevo cliente
 					const customerData: any = {
-						name: customerName,
-						phone: customerPhone
+						nombre: customerName,
+						telefono: customerPhone
 					};
 					
 					// Solo agregar email si no está vacío
 					if (customerEmail && customerEmail.trim() !== '') {
-						customerData.email = customerEmail;
+						customerData.correo = customerEmail;
 					}
 					
 					// Solo agregar dirección si no está vacía
 					if (customerAddress && customerAddress.trim() !== '') {
-						customerData.address = customerAddress;
+						customerData.direccion = customerAddress;
 					}
 					
 					try {
-						const newCustomer = await db.customer.create({
+						const newCustomer = await db.cliente.create({
 							data: customerData
 						});
 						finalCustomerId = newCustomer.id;
 					} catch (createError: any) {
 						// Si el error es por email duplicado, buscar el cliente con ese email
 						if (createError.code === 'P2002' && createError.meta?.target?.includes('email')) {
-							const existingCustomerByEmail = await db.customer.findFirst({
+							const existingCustomerByEmail = await db.cliente.findFirst({
 								where: {
-									email: customerEmail
+									correo: customerEmail
 								}
 							});
 							
 							if (existingCustomerByEmail) {
 								// Actualizar los datos del cliente existente
-								await db.customer.update({
+								await db.cliente.update({
 									where: { id: existingCustomerByEmail.id },
 									data: {
-										name: customerName,
-										phone: customerPhone,
-										address: customerAddress || existingCustomerByEmail.address
+										nombre: customerName,
+										telefono: customerPhone,
+										direccion: customerAddress || existingCustomerByEmail.direccion
 									}
 								});
 								finalCustomerId = existingCustomerByEmail.id;
@@ -176,21 +190,31 @@ export const actions: Actions = {
 				}
 			}
 
+			// Si aún no hay cliente, crear uno genérico/temporal
 			if (!finalCustomerId) {
-				return fail(400, { error: 'Debe seleccionar un cliente o crear uno nuevo' });
+				// Crear un cliente genérico si no se proporciona ninguno
+				const genericCustomer = await db.cliente.create({
+					data: {
+						nombre: 'Cliente Sin Registrar',
+						telefono: `TEMP-${Date.now()}`, // Número temporal único
+						correo: null,
+						direccion: null
+					}
+				});
+				finalCustomerId = genericCustomer.id;
 			}
 
 			// Generar número de orden único
-			const lastRepair = await db.repair.findFirst({
+			const lastRepair = await db.reparacion.findFirst({
 				orderBy: {
-					createdAt: 'desc'
+					creadoEn: 'desc'
 				}
 			});
 
 			let nextNumber = 1;
-			if (lastRepair && lastRepair.repairNumber) {
+			if (lastRepair && lastRepair.numeroReparacion) {
 				// Extraer solo el número de la orden anterior
-				const lastNumber = parseInt(lastRepair.repairNumber.replace(/\D/g, ''));
+				const lastNumber = parseInt(lastRepair.numeroReparacion.replace(/\D/g, ''));
 				if (!isNaN(lastNumber)) {
 					nextNumber = lastNumber + 1;
 				}
@@ -198,39 +222,48 @@ export const actions: Actions = {
 
 			const repairNumber = nextNumber.toString().padStart(6, '0'); // Formato: 000001, 000002, etc.
 
-			// Crear la reparación
-			const repair = await db.repair.create({
+			// Crear la reparación primero sin las notas
+			const repair = await db.reparacion.create({
 				data: {
-					repairNumber,
-					customerId: finalCustomerId,
-					deviceType,
-					brand,
-					model,
-					serialNumber: serialNumber || null,
-					issue,
-					technicianId: null,
-					priority: 'MEDIUM',
-					estimatedCost: null,
-					estimatedDate: null,
-					status: 'UNASSIGNED',
-					progress: 0,
-					receivedDate: new Date(),
-					notes: notes ? {
-						create: {
-							text: notes,
-							authorId: locals.user?.id || 'cmdjiki4o0001eqdsexyjyar8' // ID del admin por defecto
-						}
-					} : undefined
+					numeroReparacion: repairNumber,
+					clienteId: finalCustomerId,
+					tipoDispositivo: deviceType,
+					marca: brand,
+					modelo: model,
+					numeroSerie: serialNumber || null,
+					problema: issue,
+					tecnicoId: null,
+					prioridad: 'MEDIA',
+					costoEstimado: null,
+					fechaEstimada: null,
+					estado: 'SIN_ASIGNAR',
+					progreso: 0,
+					fechaRecibido: new Date()
 				}
 			});
+
+			// Si hay notas y un usuario autenticado, crear la nota por separado
+			if (notes && notes.trim() && locals.user?.id) {
+				try {
+					await db.nota.create({
+						data: {
+							texto: notes,
+							reparacionId: repair.id,
+							autorId: locals.user.id
+						}
+					});
+				} catch (noteError) {
+					console.log('⚠️ No se pudo crear la nota inicial, pero la reparación fue creada:', noteError);
+				}
+			}
 
 			console.log('✅ Reparación creada exitosamente:', repair.id);
 			
 			// Redirigir a la página de detalles de la reparación con flag para imprimir y número de orden
-			throw redirect(302, `/reparaciones/${repair.id}?print=true&created=true&orderNumber=${repair.repairNumber}`);
-		} catch (error) {
+			throw redirect(302, `/reparaciones/${repair.id}?print=true&created=true&orderNumber=${repair.numeroReparacion}`);
+		} catch (error: any) {
 			// Si es un redirect, lanzarlo (es parte del flujo normal, no un error)
-			if (error instanceof Response) {
+			if (error && typeof error === 'object' && error.status === 302) {
 				throw error;
 			}
 			

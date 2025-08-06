@@ -12,19 +12,31 @@ export const load: PageServerLoad = async ({ locals }) => {
 		throw redirect(302, '/');
 	}
 
-	const customers = await db.customer.findMany({
+	const rawCustomers = await db.cliente.findMany({
 		include: {
 			_count: {
 				select: {
-					repairs: true,
-					orders: true
+					reparaciones: true,
+					ordenes: true
 				}
 			}
 		},
 		orderBy: {
-			createdAt: 'desc'
+			creadoEn: 'desc'
 		}
 	});
+
+	// Mapear los datos del español al inglés para el frontend
+	const customers = rawCustomers.map(c => ({
+		id: c.id,
+		name: c.nombre,
+		phone: c.telefono,
+		email: c.correo,
+		address: c.direccion,
+		createdAt: c.creadoEn,
+		updatedAt: c.actualizadoEn,
+		_count: c._count
+	}));
 
 	return {
 		customers
@@ -45,7 +57,7 @@ export const actions: Actions = {
 		const customerId = formData.get('customerId') as string;
 
 		try {
-			await db.customer.delete({
+			await db.cliente.delete({
 				where: { id: customerId }
 			});
 			return { success: true };

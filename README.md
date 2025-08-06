@@ -1,4 +1,5 @@
 # ProManager - Sistema de Gestión de Reparaciones
+<!-- Deploy trigger: 2025-01-03 -->
 
 ProManager es un sistema web completo para la gestión de reparaciones de dispositivos electrónicos, control de inventario y métricas de rendimiento.
 

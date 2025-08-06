@@ -67,12 +67,12 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		// Si es técnico, mostrar sus métricas personales con datos reales
 		if (locals.user.role === 'TECHNICIAN') {
 			// Obtener información del técnico
-			const technician = await db.user.findUnique({
+			const technician = await db.usuario.findUnique({
 				where: { id: locals.user.id },
-				select: { workShift: true, name: true }
+				select: { turnoTrabajo: true, nombre: true }
 			});
 
-			const isHalfTime = technician?.workShift === 'HALF_TIME';
+			const isHalfTime = technician?.turnoTrabajo === 'MEDIO_TIEMPO';
 
 			// Metas ajustadas según tipo de turno
 			const monthlyGoal = isHalfTime ? 50 : 100;
@@ -81,10 +81,10 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			const monthlyRevenueGoal = isHalfTime ? 1000000 : 2000000;
 
 			// Obtener reparaciones reales del técnico para el periodo
-			const technicianRepairs = await db.repair.findMany({
+			const technicianRepairs = await db.reparacion.findMany({
 				where: { 
-					technicianId: locals.user.id,
-					receivedDate: {
+					tecnicoId: locals.user.id,
+					fechaRecibido: {
 						gte: periodStart,
 						lte: periodEnd
 					}
@@ -93,12 +93,12 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 
 			// Calcular métricas del periodo
 			const periodCompleted = technicianRepairs.filter(r => 
-				r.status === 'COMPLETED' || r.status === 'DELIVERED'
+				r.estado === 'COMPLETADO' || r.estado === 'ENTREGADO'
 			).length;
 
 			// Calcular ingresos del periodo (solo mano de obra)
 			const periodRevenue = technicianRepairs.reduce((sum, r) => 
-				sum + (r.laborCost || 0), 0
+				sum + (r.costoManoObra || 0), 0
 			);
 
 			// Calcular métricas de la semana actual (solo si es mes actual)
@@ -107,11 +107,11 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 				const weekStart = new Date();
 				weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1); // Lunes
 				const currentWeekRepairs = technicianRepairs.filter(r => {
-					const repairDate = new Date(r.receivedDate);
+					const repairDate = new Date(r.fechaRecibido);
 					return repairDate >= weekStart;
 				});
 				currentWeekCompleted = currentWeekRepairs.filter(r => 
-					r.status === 'COMPLETED' || r.status === 'DELIVERED'
+					r.estado === 'COMPLETADO' || r.estado === 'ENTREGADO'
 				).length;
 			}
 
@@ -121,11 +121,11 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 				const todayStart = new Date();
 				todayStart.setHours(0, 0, 0, 0);
 				const todayRepairs = technicianRepairs.filter(r => {
-					const repairDate = new Date(r.receivedDate);
+					const repairDate = new Date(r.fechaRecibido);
 					return repairDate >= todayStart;
 				});
 				todayCompleted = todayRepairs.filter(r => 
-					r.status === 'COMPLETED' || r.status === 'DELIVERED'
+					r.estado === 'COMPLETADO' || r.estado === 'ENTREGADO'
 				).length;
 			}
 
@@ -152,25 +152,25 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			const evaluation = getAdjustedEvaluation(periodCompleted, monthlyGoal, workDaysElapsed, workDaysInPeriod);
 
 			// Obtener estadísticas de equipos por categoría para el técnico
-			const technicianDeviceStats = await db.repair.groupBy({
-				by: ['deviceType'],
+			const technicianDeviceStats = await db.reparacion.groupBy({
+				by: ['tipoDispositivo'],
 				where: {
-					technicianId: locals.user.id,
-					receivedDate: {
+					tecnicoId: locals.user.id,
+					fechaRecibido: {
 						gte: periodStart,
 						lte: periodEnd
 					}
 				},
 				_count: {
-					deviceType: true
+					tipoDispositivo: true
 				}
 			});
 
 			// Formatear estadísticas de dispositivos
 			const deviceCategories = technicianDeviceStats.map(stat => ({
-				type: stat.deviceType,
-				count: stat._count.deviceType,
-				percentage: technicianRepairs.length > 0 ? (stat._count.deviceType / technicianRepairs.length) * 100 : 0
+				type: stat.tipoDispositivo,
+				count: stat._count.tipoDispositivo,
+				percentage: technicianRepairs.length > 0 ? (stat._count.tipoDispositivo / technicianRepairs.length) * 100 : 0
 			})).sort((a, b) => b.count - a.count);
 
 			return {
@@ -195,14 +195,14 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 				workDaysElapsed,
 				daysLeft,
 				isHalfTime,
-				technicianName: technician?.name || locals.user.username,
+				technicianName: technician?.nombre || locals.user.username,
 				// Evaluación y alertas
 				evaluation,
 				alertStatus: getAlertStatus(evaluation.percentage, daysLeft),
 				// Totales
 				totalRepairs: technicianRepairs.length,
 				activeRepairs: technicianRepairs.filter(r => 
-					!['COMPLETED', 'DELIVERED', 'CANCELLED'].includes(r.status)
+					!['COMPLETADO', 'ENTREGADO', 'CANCELADO'].includes(r.estado)
 				).length,
 				// Categorías de equipos
 				deviceCategories
@@ -210,50 +210,50 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		}
 
 		// Para admin/dueño - vista general con datos reales
-		const technicians = await db.user.findMany({
-			where: { role: 'TECHNICIAN' },
+		const technicians = await db.usuario.findMany({
+			where: { rol: 'TECNICO' },
 			include: {
-				repairOrders: {
+				reparacionesAsignadas: {
 					where: {
-						receivedDate: {
+						fechaRecibido: {
 							gte: periodStart,
 							lte: periodEnd
 						}
 					},
 					select: {
 						id: true,
-						status: true,
-						receivedDate: true,
-						deliveryDate: true,
-						laborCost: true
+						estado: true,
+						fechaRecibido: true,
+						fechaEntrega: true,
+						costoManoObra: true
 					}
 				}
 			}
 		});
 
 		const technicianStats = await Promise.all(technicians.map(async (tech) => {
-			const isHalfTime = tech.workShift === 'HALF_TIME';
+			const isHalfTime = tech.turnoTrabajo === 'MEDIO_TIEMPO';
 			const monthlyGoal = isHalfTime ? 50 : 100;
 			const weeklyGoal = isHalfTime ? 12.5 : 25;
 			const dailyGoal = isHalfTime ? 2.08 : 4.17;
 			
-			const completed = tech.repairOrders.filter(r => 
-				r.status === 'COMPLETED' || r.status === 'DELIVERED'
+			const completed = tech.reparacionesAsignadas.filter(r => 
+				r.estado === 'COMPLETADO' || r.estado === 'ENTREGADO'
 			).length;
 
 			// Evaluación ajustada al tiempo
 			const evaluation = getAdjustedEvaluation(completed, monthlyGoal, workDaysElapsed, workDaysInPeriod);
 			
 			// Calcular tiempo promedio de reparación
-			const completedWithTime = tech.repairOrders.filter(r => 
-				(r.status === 'COMPLETED' || r.status === 'DELIVERED') && r.deliveryDate
+			const completedWithTime = tech.reparacionesAsignadas.filter(r => 
+				(r.estado === 'COMPLETADO' || r.estado === 'ENTREGADO') && r.fechaEntrega
 			);
 
 			let avgRepairTime = 0;
 			if (completedWithTime.length > 0) {
 				const totalTime = completedWithTime.reduce((sum, r) => {
-					const start = new Date(r.receivedDate);
-					const end = new Date(r.deliveryDate!);
+					const start = new Date(r.fechaRecibido);
+					const end = new Date(r.fechaEntrega!);
 					const days = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
 					return sum + days;
 				}, 0);
@@ -261,12 +261,12 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			}
 
 			// Calcular ingresos totales
-			const revenue = tech.repairOrders.reduce((sum, r) => sum + (r.laborCost || 0), 0);
+			const revenue = tech.reparacionesAsignadas.reduce((sum, r) => sum + (r.costoManoObra || 0), 0);
 			
 			return {
 				id: tech.id,
-				name: tech.name,
-				workShift: tech.workShift || 'FULL_TIME',
+				name: tech.nombre,
+				workShift: tech.turnoTrabajo || 'TIEMPO_COMPLETO',
 				monthlyGoal,
 				weeklyGoal,
 				dailyGoal,
@@ -279,9 +279,9 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 				revenue,
 				// Para rankings - basado en porcentaje ajustado
 				rankingScore: evaluation.percentage,
-				totalRepairs: tech.repairOrders.length,
-				activeRepairs: tech.repairOrders.filter(r => 
-					!['COMPLETED', 'DELIVERED', 'CANCELLED'].includes(r.status)
+				totalRepairs: tech.reparacionesAsignadas.length,
+				activeRepairs: tech.reparacionesAsignadas.filter(r => 
+					!['COMPLETADO', 'ENTREGADO', 'CANCELADO'].includes(r.estado)
 				).length
 			};
 		}));
@@ -295,56 +295,56 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		};
 
 		// Estadísticas generales del periodo
-		const allRepairs = await db.repair.count({
+		const allRepairs = await db.reparacion.count({
 			where: {
-				receivedDate: {
+				fechaRecibido: {
 					gte: periodStart,
 					lte: periodEnd
 				}
 			}
 		});
 		
-		const activeRepairs = await db.repair.count({
+		const activeRepairs = await db.reparacion.count({
 			where: {
-				receivedDate: {
+				fechaRecibido: {
 					gte: periodStart,
 					lte: periodEnd
 				},
-				status: {
-					notIn: ['COMPLETED', 'DELIVERED', 'CANCELLED']
+				estado: {
+					notIn: ['COMPLETADO', 'ENTREGADO', 'CANCELADO']
 				}
 			}
 		});
 
 		// Obtener estadísticas de equipos por categoría
-		const deviceStats = await db.repair.groupBy({
-			by: ['deviceType'],
+		const deviceStats = await db.reparacion.groupBy({
+			by: ['tipoDispositivo'],
 			where: {
-				receivedDate: {
+				fechaRecibido: {
 					gte: periodStart,
 					lte: periodEnd
 				}
 			},
 			_count: {
-				deviceType: true
+				tipoDispositivo: true
 			}
 		});
 
 		// Formatear estadísticas de dispositivos
 		const deviceCategories = deviceStats.map(stat => ({
-			type: stat.deviceType,
-			count: stat._count.deviceType,
-			percentage: (stat._count.deviceType / allRepairs) * 100
+			type: stat.tipoDispositivo,
+			count: stat._count.tipoDispositivo,
+			percentage: (stat._count.tipoDispositivo / allRepairs) * 100
 		})).sort((a, b) => b.count - a.count);
 
 		// Obtener años disponibles para el selector
-		const oldestRepair = await db.repair.findFirst({
-			orderBy: { receivedDate: 'asc' },
-			select: { receivedDate: true }
+		const oldestRepair = await db.reparacion.findFirst({
+			orderBy: { fechaRecibido: 'asc' },
+			select: { fechaRecibido: true }
 		});
 		
 		const availableYears = [];
-		const startYear = oldestRepair ? new Date(oldestRepair.receivedDate).getFullYear() : now.getFullYear();
+		const startYear = oldestRepair ? new Date(oldestRepair.fechaRecibido).getFullYear() : now.getFullYear();
 		for (let year = startYear; year <= now.getFullYear(); year++) {
 			availableYears.push(year);
 		}

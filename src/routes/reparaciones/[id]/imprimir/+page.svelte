@@ -109,6 +109,32 @@
 		color: #333;
 	}
 	
+	.header-line {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 10px;
+	}
+	
+	.header-left {
+		text-align: left;
+		font-weight: normal;
+		font-size: 18px;
+	}
+	
+	.header-center {
+		text-align: center;
+		font-weight: bold;
+		font-size: 20px;
+		flex: 1;
+	}
+	
+	.header-right {
+		text-align: right;
+		font-weight: normal;
+		font-size: 16px;
+	}
+	
 	.section {
 		margin-bottom: 15px;
 	}
@@ -244,11 +270,16 @@
 	
 </style>
 
-<!-- RECIBO -->
+<!-- PRIMER RECIBO: ORIGINAL EMPRESA (INGRESO) - Siempre se imprime primero cuando es ingreso -->
+{#if !isExitReceipt}
 <div class="container">
 	<div class="header">
-		<h1>{receiptTitle} #{repair.repairNumber}</h1>
-		<p style="margin: 5px 0; color: #666;">ORIGINAL</p>
+		<div class="header-line">
+			<span class="header-left">Cyberlink</span>
+			<span class="header-center">ORDEN DE SERVICIO #{repair.repairNumber}</span>
+			<span class="header-right">Tel: 376438205</span>
+		</div>
+		<p style="margin: 5px 0; color: #666;">ORIGINAL EMPRESA</p>
 	</div>
 	
 	{#if repair.status === 'CANCELLED'}
@@ -377,12 +408,6 @@
 		{/if}
 	{/if}
 	
-	{#if isExitReceipt}
-		<div class="highlight-box" style="margin-top: 30px;">
-			EQUIPO RETIRADO - SERVICIO FINALIZADO
-		</div>
-	{/if}
-	
 	<!-- Firma -->
 	<div class="signature">
 		<div class="signature-line"></div>
@@ -390,11 +415,15 @@
 	</div>
 </div>
 
-{#if !isExitReceipt && printSettings.copiesCount > 1}
-<!-- COPIA CLIENTE (solo para orden de servicio) -->
+{#if printSettings.copiesCount > 1}
+<!-- SEGUNDO RECIBO: COPIA CLIENTE (INGRESO) -->
 <div class="container page-break">
 	<div class="header">
-		<h1>{receiptTitle} #{repair.repairNumber}</h1>
+		<div class="header-line">
+			<span class="header-left">Cyberlink</span>
+			<span class="header-center">ORDEN DE SERVICIO #{repair.repairNumber}</span>
+			<span class="header-right">Tel: 376438205</span>
+		</div>
 		<p style="margin: 5px 0; color: #666;">COPIA CLIENTE</p>
 	</div>
 	
@@ -446,90 +475,159 @@
 		<p>{repair.issue}</p>
 	</div>
 	
-	{#if isExitReceipt}
-		<!-- Información adicional para recibo de salida -->
-		<div class="exit-info">
-			<h2 class="section-title">Información de Salida</h2>
-			
-			{#if repair.status === 'COMPLETED' || repair.status === 'RETIRADO'}
-				{#if repair.workPerformed}
-					<div class="info-row">
-						<strong>Trabajo realizado:</strong>
-					</div>
-					<p style="margin-left: 20px;">{repair.workPerformed}</p>
-				{:else}
-					<div class="info-row" style="color: #666; font-style: italic;">
-						<strong>Trabajo realizado:</strong> No especificado
-					</div>
+	<!-- Términos y condiciones para orden de servicio -->
+	{#if printSettings.showTerms && termsAndConditions.length > 0}
+	<div class="terms">
+		<strong>Términos y Condiciones:</strong>
+		<ul>
+			{#each termsAndConditions as term}
+				{#if term.trim()}
+					<li>{term}</li>
 				{/if}
-				
-				{#if repair.finalObservations}
-					<div class="info-row" style="margin-top: 10px;">
-						<strong>Observaciones:</strong>
-					</div>
-					<p style="margin-left: 20px;">{repair.finalObservations}</p>
-				{/if}
-			{/if}
-			
-			{#if repair.status === 'CANCELLED'}
-				<div class="info-row">
-					<strong>Motivo de cancelación:</strong>
-				</div>
-				<p style="margin-left: 20px; color: #dc3545;">{repair.cancellationReason || 'No especificado'}</p>
-				
-				{#if repair.finalObservations}
-					<div class="info-row" style="margin-top: 10px;">
-						<strong>Observaciones:</strong>
-					</div>
-					<p style="margin-left: 20px;">{repair.finalObservations}</p>
-				{/if}
-			{/if}
-			
-			<div class="info-row" style="margin-top: 15px;">
-				<strong>Fecha de salida:</strong> {formatDate(new Date())}
-			</div>
+			{/each}
+		</ul>
+	</div>
+	{/if}
+	
+	<!-- Firma -->
+	<div class="signature">
+		<div class="signature-line"></div>
+		<p>Firma del Cliente</p>
+	</div>
+</div>
+{/if}
+{/if}
+
+<!-- TERCER RECIBO: RECIBO DE SALIDA (Solo cuando el equipo está terminado/retirado) -->
+{#if isExitReceipt}
+<div class="container">
+	<div class="header">
+		<div class="header-line">
+			<span class="header-left">Cyberlink</span>
+			<span class="header-center">RECIBO DE SALIDA #{repair.repairNumber}</span>
+			<span class="header-right">Tel: 376438205</span>
 		</div>
-		
-		<!-- Costos para recibo de salida -->
-		<div class="cost-section">
-			<h2 class="section-title">Detalle de Costos</h2>
-			<div class="info-row">
-				<strong>Mano de obra:</strong> ${repair.laborCost || 0}
-			</div>
-			<div class="info-row">
-				<strong>Repuestos:</strong> ${repair.partsCost || 0}
-			</div>
-			{#if repair.partsDescription}
-				<div class="info-row">
-					<strong>Descripción repuestos:</strong> {repair.partsDescription}
-				</div>
-			{/if}
-			<div class="total-cost">
-				TOTAL A PAGAR: ${(repair.laborCost || 0) + (repair.partsCost || 0)}
-			</div>
+		<p style="margin: 5px 0; color: #666;">ORIGINAL</p>
+	</div>
+	
+	{#if repair.status === 'CANCELLED'}
+		<div class="cancelled-stamp">
+			NO REPARADO - ORDEN CANCELADA
 		</div>
-	{:else}
-		<!-- Términos y condiciones para orden de servicio -->
-		{#if printSettings.showTerms && termsAndConditions.length > 0}
-		<div class="terms">
-			<strong>Términos y Condiciones:</strong>
-			<ul>
-				{#each termsAndConditions as term}
-					{#if term.trim()}
-						<li>{term}</li>
-					{/if}
-				{/each}
-			</ul>
+	{/if}
+	
+	<!-- Información del Cliente -->
+	<div class="section">
+		<h2 class="section-title">Información del Cliente</h2>
+		<div class="info-row">
+			<strong>Cliente:</strong> {repair.customer.name}
+		</div>
+		<div class="info-row">
+			<strong>Teléfono:</strong> {repair.customer.phone}
+		</div>
+		<div class="info-row">
+			<strong>Fecha de recepción:</strong> {formatDate(repair.receivedDate)}
+		</div>
+		{#if printSettings.showDate}
+		<div class="info-row">
+			<strong>Fecha de impresión:</strong> {formatDate(new Date())}
 		</div>
 		{/if}
-	{/if}
+	</div>
 	
-	{#if isExitReceipt}
-		<div class="highlight-box" style="margin-top: 30px;">
-			EQUIPO RETIRADO - SERVICIO FINALIZADO
+	<!-- Información del Equipo -->
+	<div class="section">
+		<h2 class="section-title">Información del Equipo</h2>
+		<div class="info-row">
+			<strong>Tipo de equipo:</strong> {repair.deviceType}
 		</div>
-	{/if}
+		<div class="info-row">
+			<strong>Marca:</strong> {repair.brand}
+		</div>
+		<div class="info-row">
+			<strong>Modelo:</strong> {repair.model}
+		</div>
+		<div class="info-row">
+			<strong>Número de serie:</strong> {repair.serialNumber || 'N/A'}
+		</div>
+	</div>
 	
+	<!-- Problema Reportado -->
+	<div class="section">
+		<h2 class="section-title">Problema Reportado</h2>
+		<p>{repair.issue}</p>
+	</div>
 	
+	<!-- Información de salida -->
+	<div class="exit-info">
+		<h2 class="section-title">Información de Salida</h2>
+		
+		{#if repair.status === 'COMPLETED' || repair.status === 'RETIRADO'}
+			{#if repair.workPerformed}
+				<div class="info-row">
+					<strong>Trabajo realizado:</strong>
+				</div>
+				<p style="margin-left: 20px;">{repair.workPerformed}</p>
+			{:else}
+				<div class="info-row" style="color: #666; font-style: italic;">
+					<strong>Trabajo realizado:</strong> No especificado
+				</div>
+			{/if}
+			
+			{#if repair.finalObservations}
+				<div class="info-row" style="margin-top: 10px;">
+					<strong>Observaciones:</strong>
+				</div>
+				<p style="margin-left: 20px;">{repair.finalObservations}</p>
+			{/if}
+		{/if}
+		
+		{#if repair.status === 'CANCELLED'}
+			<div class="info-row">
+				<strong>Motivo de cancelación:</strong>
+			</div>
+			<p style="margin-left: 20px; color: #dc3545;">{repair.cancellationReason || 'No especificado'}</p>
+			
+			{#if repair.finalObservations}
+				<div class="info-row" style="margin-top: 10px;">
+					<strong>Observaciones:</strong>
+				</div>
+				<p style="margin-left: 20px;">{repair.finalObservations}</p>
+			{/if}
+		{/if}
+		
+		<div class="info-row" style="margin-top: 15px;">
+			<strong>Fecha de salida:</strong> {formatDate(new Date())}
+		</div>
+	</div>
+	
+	<!-- Costos -->
+	<div class="cost-section">
+		<h2 class="section-title">Detalle de Costos</h2>
+		<div class="info-row">
+			<strong>Mano de obra:</strong> ${repair.laborCost || 0}
+		</div>
+		<div class="info-row">
+			<strong>Repuestos:</strong> ${repair.partsCost || 0}
+		</div>
+		{#if repair.partsDescription}
+			<div class="info-row">
+				<strong>Descripción repuestos:</strong> {repair.partsDescription}
+			</div>
+		{/if}
+		<div class="total-cost">
+			TOTAL A PAGAR: ${(repair.laborCost || 0) + (repair.partsCost || 0)}
+		</div>
+	</div>
+	
+	<div class="highlight-box" style="margin-top: 30px;">
+		EQUIPO RETIRADO - SERVICIO FINALIZADO
+	</div>
+	
+	<!-- Firma -->
+	<div class="signature">
+		<div class="signature-line"></div>
+		<p>Firma del Cliente</p>
+	</div>
 </div>
 {/if}

@@ -15,39 +15,97 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	try {
 		// Obtener la reparación con todas sus relaciones
 		console.log('📊 Consultando base de datos...');
-		const repair = await db.repair.findUnique({
+		const rawRepair = await db.reparacion.findUnique({
 			where: { id: repairId },
 			include: {
-				customer: true,
-				technician: true,
-				notes: {
+				cliente: true,
+				tecnico: true,
+				notas: {
 					include: {
-						author: true
+						autor: true
 					},
 					orderBy: {
-						createdAt: 'desc'
+						creadoEn: 'desc'
 					}
-				},
-				parts: true
+				}
 			}
 		});
 
-		console.log('📋 Reparación encontrada:', repair ? 'SÍ' : 'NO');
-		if (repair) {
-			console.log('🔧 Técnico asignado:', repair.technicianId);
-			console.log('📝 Cantidad de notas:', repair.notes?.length || 0);
-			console.log('💼 Trabajo realizado:', repair.workPerformed);
-			console.log('📄 Observaciones finales:', repair.finalObservations);
-			console.log('🏷️ Estado:', repair.status);
-		}
-
-		if (!repair) {
+		console.log('📋 Reparación encontrada:', rawRepair ? 'SÍ' : 'NO');
+		
+		if (!rawRepair) {
 			throw error(404, 'Reparación no encontrada');
 		}
 
+		// Mapear los datos del español al inglés para el frontend
+		const repair = {
+			id: rawRepair.id,
+			repairNumber: rawRepair.numeroReparacion,
+			customer: rawRepair.cliente ? {
+				id: rawRepair.cliente.id,
+				name: rawRepair.cliente.nombre,
+				phone: rawRepair.cliente.telefono,
+				email: rawRepair.cliente.correo,
+				address: rawRepair.cliente.direccion
+			} : null,
+			technician: rawRepair.tecnico ? {
+				id: rawRepair.tecnico.id,
+				name: rawRepair.tecnico.nombre,
+				username: rawRepair.tecnico.nombreUsuario
+			} : null,
+			technicianId: rawRepair.tecnicoId,
+			deviceType: rawRepair.tipoDispositivo,
+			brand: rawRepair.marca,
+			model: rawRepair.modelo,
+			serialNumber: rawRepair.numeroSerie,
+			issue: rawRepair.problema,
+			diagnosis: rawRepair.diagnostico,
+			status: rawRepair.estado === 'SIN_ASIGNAR' ? 'UNASSIGNED' :
+					rawRepair.estado === 'EN_REVISION' ? 'IN_REVIEW' :
+					rawRepair.estado === 'EN_REPARACION' ? 'IN_REPAIR' :
+					rawRepair.estado === 'ESPERANDO_REPUESTO' ? 'WAITING_PARTS' :
+					rawRepair.estado === 'COMPLETADO' ? 'COMPLETED' :
+					rawRepair.estado === 'CANCELADO' ? 'CANCELLED' :
+					rawRepair.estado === 'RETIRADO' ? 'RETIRADO' : rawRepair.estado,
+			priority: rawRepair.prioridad === 'ALTA' ? 'HIGH' :
+					 rawRepair.prioridad === 'MEDIA' ? 'MEDIUM' :
+					 rawRepair.prioridad === 'BAJA' ? 'LOW' : rawRepair.prioridad,
+			estimatedCost: rawRepair.costoEstimado,
+			finalCost: rawRepair.costoFinal,
+			receivedDate: rawRepair.fechaRecibido,
+			estimatedDate: rawRepair.fechaEstimada,
+			deliveryDate: rawRepair.fechaEntrega,
+			progress: rawRepair.progreso,
+			purchaseLink: rawRepair.enlaceCompra,
+			partsDescription: rawRepair.descripcionPartes,
+			partsStatus: rawRepair.estadoPartes,
+			estimatedArrival: rawRepair.llegadaEstimada,
+			laborCost: rawRepair.costoManoObra,
+			partsCost: rawRepair.costoPartes,
+			workPerformed: rawRepair.trabajoRealizado,
+			finalObservations: rawRepair.observacionesFinales,
+			cancellationReason: rawRepair.motivoCancelacion,
+			createdAt: rawRepair.creadoEn,
+			updatedAt: rawRepair.actualizadoEn,
+			notes: rawRepair.notas ? rawRepair.notas.map(n => ({
+				id: n.id,
+				text: n.texto,
+				createdAt: n.creadoEn,
+				author: n.autor ? {
+					id: n.autor.id,
+					name: n.autor.nombre,
+					username: n.autor.nombreUsuario
+				} : null
+			})) : [],
+			parts: []
+		};
+
+		console.log('🏷️ Estado mapeado:', repair.status);
+		console.log('📝 Cantidad de notas:', repair.notes?.length || 0);
+
 		// Verificar permisos: los técnicos solo pueden ver sus propias reparaciones O reparaciones sin asignar
 		console.log('🔐 Verificando permisos...');
-		if (locals.user.role === 'TECHNICIAN' && repair.technicianId && repair.technicianId !== locals.user.id) {
+		if (locals.user.role === 'TECHNICIAN' && rawRepair.tecnicoId && rawRepair.tecnicoId !== locals.user.id) {
 			console.log('❌ Acceso denegado - Técnico sin permisos');
 			throw error(403, 'No tienes permisos para ver esta reparación');
 		}
@@ -56,16 +114,20 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		let technicians = [];
 		if (['ADMIN', 'MANAGER'].includes(locals.user.role)) {
 			console.log('👥 Cargando lista de técnicos...');
-			technicians = await db.user.findMany({
-				where: { role: 'TECHNICIAN' },
+			const rawTechnicians = await db.usuario.findMany({
+				where: { rol: 'TECNICO' },
 				select: {
 					id: true,
-					name: true
+					nombre: true
 				},
 				orderBy: {
-					name: 'asc'
+					nombre: 'asc'
 				}
 			});
+			technicians = rawTechnicians.map(t => ({
+				id: t.id,
+				name: t.nombre
+			}));
 			console.log('👥 Técnicos encontrados:', technicians.length);
 		}
 
@@ -75,7 +137,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			user: locals.user,
 			technicians
 		};
-	} catch (err) {
+	} catch (err: any) {
 		console.error('💥 Error cargando reparación:', err);
 		console.error('💥 Stack trace:', err.stack);
 		
@@ -101,7 +163,7 @@ export const actions: Actions = {
 
 		try {
 			// Obtener la reparación actual
-			const currentRepair = await db.repair.findUnique({
+			const currentRepair = await db.reparacion.findUnique({
 				where: { id: params.id }
 			});
 
@@ -110,50 +172,63 @@ export const actions: Actions = {
 			}
 
 			// Verificar permisos
-			if (locals.user.role === 'TECHNICIAN' && currentRepair.technicianId && currentRepair.technicianId !== locals.user.id) {
+			if (locals.user.role === 'TECHNICIAN' && currentRepair.tecnicoId && currentRepair.tecnicoId !== locals.user.id) {
 				throw error(403, 'No tienes permisos para actualizar esta reparación');
 			}
 
+			// Mapear el estado del inglés al español
+			const statusMap: Record<string, string> = {
+				'UNASSIGNED': 'SIN_ASIGNAR',
+				'IN_REVIEW': 'EN_REVISION',
+				'IN_REPAIR': 'EN_REPARACION',
+				'WAITING_PARTS': 'ESPERANDO_REPUESTO',
+				'COMPLETED': 'COMPLETADO',
+				'CANCELLED': 'CANCELADO',
+				'RETIRADO': 'RETIRADO'
+			};
+
+			const mappedStatus = statusMap[newStatus] || newStatus;
+
 			// Actualizar el estado en la base de datos
-			await db.repair.update({
+			await db.reparacion.update({
 				where: { id: params.id },
 				data: {
-					status: newStatus,
-					updatedAt: new Date()
+					estado: mappedStatus,
+					actualizadoEn: new Date()
 				}
 			});
 
 			// Mapeo de estados para mostrar en español
-			const statusLabels = {
-				UNASSIGNED: 'Sin asignar',
-				IN_REVIEW: 'En revisión',
-				IN_REPAIR: 'En reparación',
-				WAITING_PARTS: 'Esperando repuestos',
-				COMPLETED: 'Terminado',
-				CANCELLED: 'Cancelado',
+			const statusLabels: Record<string, string> = {
+				SIN_ASIGNAR: 'Sin asignar',
+				EN_REVISION: 'En revisión',
+				EN_REPARACION: 'En reparación',
+				ESPERANDO_REPUESTO: 'Esperando repuestos',
+				COMPLETADO: 'Terminado',
+				CANCELADO: 'Cancelado',
 				RETIRADO: 'Retirado'
 			};
 
 			// SIEMPRE crear nota automática cuando cambia el estado
-			if (currentRepair.status !== newStatus) {
-				const automaticNoteText = `🔄 Estado cambiado de "${statusLabels[currentRepair.status]}" a "${statusLabels[newStatus]}"`;
+			if (currentRepair.estado !== mappedStatus) {
+				const automaticNoteText = `🔄 Estado cambiado de "${statusLabels[currentRepair.estado]}" a "${statusLabels[mappedStatus]}"`;
 				
-				await db.note.create({
+				await db.nota.create({
 					data: {
-						text: automaticNoteText,
-						repairId: params.id,
-						authorId: locals.user.id
+						texto: automaticNoteText,
+						reparacionId: params.id,
+						autorId: locals.user.id
 					}
 				});
 			}
 
 			// Si el usuario agregó una nota adicional, crearla también
 			if (userNote && userNote.trim()) {
-				await db.note.create({
+				await db.nota.create({
 					data: {
-						text: userNote.trim(),
-						repairId: params.id,
-						authorId: locals.user.id
+						texto: userNote.trim(),
+						reparacionId: params.id,
+						autorId: locals.user.id
 					}
 				});
 			}
@@ -180,7 +255,7 @@ export const actions: Actions = {
 
 		try {
 			// Verificar que la reparación existe
-			const repair = await db.repair.findUnique({
+			const repair = await db.reparacion.findUnique({
 				where: { id: params.id }
 			});
 
@@ -189,16 +264,16 @@ export const actions: Actions = {
 			}
 
 			// Verificar permisos
-			if (locals.user.role === 'TECHNICIAN' && repair.technicianId && repair.technicianId !== locals.user.id) {
+			if (locals.user.role === 'TECHNICIAN' && repair.tecnicoId && repair.tecnicoId !== locals.user.id) {
 				throw error(403, 'No tienes permisos para agregar notas a esta reparación');
 			}
 
 			// Crear la nota
-			await db.note.create({
+			await db.nota.create({
 				data: {
-					text: text.trim(),
-					repairId: params.id,
-					authorId: locals.user.id
+					texto: text.trim(),
+					reparacionId: params.id,
+					autorId: locals.user.id
 				}
 			});
 
@@ -207,23 +282,6 @@ export const actions: Actions = {
 			console.error('Error agregando nota:', err);
 			return { error: 'Error al agregar la nota' };
 		}
-	},
-
-	// Actualizar repuestos
-	updateParts: async ({ request, params, locals }) => {
-		if (!locals.user) {
-			throw redirect(302, '/login');
-		}
-
-		// Solo administradores y managers pueden actualizar repuestos
-		if (!['ADMIN', 'MANAGER'].includes(locals.user.role)) {
-			throw error(403, 'No tienes permisos para actualizar repuestos');
-		}
-
-		const formData = await request.formData();
-		// Aquí iría la lógica para actualizar repuestos
-		// Por ahora solo retornamos success
-		return { success: true };
 	},
 
 	// Actualizar costos
@@ -236,7 +294,7 @@ export const actions: Actions = {
 		}
 
 		// Verificar permisos
-		const currentRepair = await db.repair.findUnique({
+		const currentRepair = await db.reparacion.findUnique({
 			where: { id: params.id }
 		});
 
@@ -245,13 +303,13 @@ export const actions: Actions = {
 		}
 
 		// Los técnicos solo pueden actualizar sus propias reparaciones
-		if (locals.user.role === 'TECHNICIAN' && currentRepair.technicianId !== locals.user.id) {
+		if (locals.user.role === 'TECHNICIAN' && currentRepair.tecnicoId !== locals.user.id) {
 			throw error(403, 'Solo puedes actualizar los costos de tus reparaciones asignadas');
 		}
 
 		// Solo administradores, managers y técnicos asignados pueden actualizar costos
 		if (!['ADMIN', 'MANAGER'].includes(locals.user.role) && 
-			!(locals.user.role === 'TECHNICIAN' && currentRepair.technicianId === locals.user.id)) {
+			!(locals.user.role === 'TECHNICIAN' && currentRepair.tecnicoId === locals.user.id)) {
 			console.error('❌ Usuario sin permisos para costos:', locals.user.role);
 			throw error(403, 'No tienes permisos para actualizar costos');
 		}
@@ -270,22 +328,22 @@ export const actions: Actions = {
 		try {
 			// Preparar datos para actualizar
 			const updateData: any = {
-				updatedAt: new Date()
+				actualizadoEn: new Date()
 			};
 
 			// Los técnicos solo pueden actualizar partsCost y partsDescription
 			if (locals.user.role === 'TECHNICIAN') {
-				if (partsCost) updateData.partsCost = parseFloat(partsCost);
-				if (partsDescription !== undefined) updateData.partsDescription = partsDescription;
+				if (partsCost) updateData.costoPartes = parseFloat(partsCost);
+				if (partsDescription !== undefined) updateData.descripcionPartes = partsDescription;
 			} else {
 				// Admin y Manager pueden actualizar todo
-				if (laborCost) updateData.laborCost = parseFloat(laborCost);
-				if (partsCost) updateData.partsCost = parseFloat(partsCost);
-				if (partsDescription !== undefined) updateData.partsDescription = partsDescription;
+				if (laborCost) updateData.costoManoObra = parseFloat(laborCost);
+				if (partsCost) updateData.costoPartes = parseFloat(partsCost);
+				if (partsDescription !== undefined) updateData.descripcionPartes = partsDescription;
 			}
 
 			console.log('💾 Actualizando costos en BD...');
-			await db.repair.update({
+			await db.reparacion.update({
 				where: { id: params.id },
 				data: updateData
 			});
@@ -293,11 +351,11 @@ export const actions: Actions = {
 
 			// Crear nota automática
 			const costoTotal = (parseFloat(laborCost) || 0) + (parseFloat(partsCost) || 0);
-			await db.note.create({
+			await db.nota.create({
 				data: {
-					text: `💰 Costos actualizados - Mano de obra: $${laborCost || 0}, Repuestos: $${partsCost || 0}, Total: $${costoTotal}`,
-					repairId: params.id,
-					authorId: locals.user.id
+					texto: `💰 Costos actualizados - Mano de obra: $${laborCost || 0}, Repuestos: $${partsCost || 0}, Total: $${costoTotal}`,
+					reparacionId: params.id,
+					autorId: locals.user.id
 				}
 			});
 
@@ -330,7 +388,7 @@ export const actions: Actions = {
 
 		try {
 			// Obtener la reparación actual
-			const currentRepair = await db.repair.findUnique({
+			const currentRepair = await db.reparacion.findUnique({
 				where: { id: params.id }
 			});
 
@@ -340,14 +398,14 @@ export const actions: Actions = {
 
 			console.log('🔧 Reparación actual:', {
 				id: currentRepair.id,
-				technicianId: currentRepair.technicianId,
-				currentLink: currentRepair.purchaseLink
+				technicianId: currentRepair.tecnicoId,
+				currentLink: currentRepair.enlaceCompra
 			});
 
 			// Verificar permisos: técnicos solo sus reparaciones, admin puede todas
-			if (locals.user.role === 'TECHNICIAN' && currentRepair.technicianId !== locals.user.id) {
+			if (locals.user.role === 'TECHNICIAN' && currentRepair.tecnicoId !== locals.user.id) {
 				console.error('❌ Técnico no asignado:', {
-					repairTech: currentRepair.technicianId,
+					repairTech: currentRepair.tecnicoId,
 					userTech: locals.user.id
 				});
 				throw error(403, 'Solo puedes actualizar el link de compra de tus reparaciones asignadas');
@@ -355,30 +413,30 @@ export const actions: Actions = {
 
 			// Actualizar solo el link de compra
 			console.log('💾 Actualizando link en BD...');
-			await db.repair.update({
+			await db.reparacion.update({
 				where: { id: params.id },
 				data: {
-					purchaseLink: purchaseLink || null,
-					updatedAt: new Date()
+					enlaceCompra: purchaseLink || null,
+					actualizadoEn: new Date()
 				}
 			});
 			console.log('✅ Link actualizado en BD');
 
 			// Crear nota automática
 			if (purchaseLink && purchaseLink.trim()) {
-				await db.note.create({
+				await db.nota.create({
 					data: {
-						text: `🔗 Link de compra actualizado: ${purchaseLink}`,
-						repairId: params.id,
-						authorId: locals.user.id
+						texto: `🔗 Link de compra actualizado: ${purchaseLink}`,
+						reparacionId: params.id,
+						autorId: locals.user.id
 					}
 				});
-			} else if (currentRepair.purchaseLink && !purchaseLink) {
-				await db.note.create({
+			} else if (currentRepair.enlaceCompra && !purchaseLink) {
+				await db.nota.create({
 					data: {
-						text: `🔗 Link de compra eliminado`,
-						repairId: params.id,
-						authorId: locals.user.id
+						texto: `🔗 Link de compra eliminado`,
+						reparacionId: params.id,
+						autorId: locals.user.id
 					}
 				});
 			}
@@ -418,19 +476,19 @@ export const actions: Actions = {
 
 			// Obtener la reparación actual con técnico incluido
 			console.log('📊 Consultando reparación actual...');
-			const currentRepair = await db.repair.findUnique({
+			const currentRepair = await db.reparacion.findUnique({
 				where: { id: params.id },
 				include: { 
-					technician: {
-						select: { id: true, name: true }
+					tecnico: {
+						select: { id: true, nombre: true }
 					}
 				}
 			});
 			console.log('📋 Reparación actual:', {
 				id: currentRepair?.id,
-				status: currentRepair?.status,
-				technicianId: currentRepair?.technicianId,
-				technician: currentRepair?.technician?.name
+				status: currentRepair?.estado,
+				technicianId: currentRepair?.tecnicoId,
+				technician: currentRepair?.tecnico?.nombre
 			});
 
 			if (!currentRepair) {
@@ -438,24 +496,24 @@ export const actions: Actions = {
 			}
 
 			// Obtener información del nuevo técnico si se proporciona ID
-			const newTechnician = newTechnicianId ? await db.user.findUnique({
+			const newTechnician = newTechnicianId ? await db.usuario.findUnique({
 				where: { id: newTechnicianId },
-				select: { id: true, name: true }
+				select: { id: true, nombre: true }
 			}) : null;
 			console.log('👤 Nuevo técnico:', newTechnician);
 
 			// Determinar el nuevo estado
-			const newStatus = newTechnicianId && currentRepair.status === 'UNASSIGNED' ? 'IN_REVIEW' : currentRepair.status;
-			console.log('🔄 Cambio de estado:', currentRepair.status, '->', newStatus);
+			const newStatus = newTechnicianId && currentRepair.estado === 'SIN_ASIGNAR' ? 'EN_REVISION' : currentRepair.estado;
+			console.log('🔄 Cambio de estado:', currentRepair.estado, '->', newStatus);
 
 			// Actualizar la reparación con el nuevo técnico
 			console.log('💾 Actualizando reparación...');
-			await db.repair.update({
+			await db.reparacion.update({
 				where: { id: params.id },
 				data: {
-					technicianId: newTechnicianId || null,
-					status: newStatus,
-					updatedAt: new Date()
+					tecnicoId: newTechnicianId || null,
+					estado: newStatus,
+					actualizadoEn: new Date()
 				}
 			});
 			console.log('✅ Reparación actualizada');
@@ -463,17 +521,17 @@ export const actions: Actions = {
 			// SIEMPRE crear nota automática para cambios de técnico
 			let automaticNoteText = '';
 
-			if (!currentRepair.technicianId && newTechnicianId) {
+			if (!currentRepair.tecnicoId && newTechnicianId) {
 				// Primera asignación
-				automaticNoteText = `👤 Reparación asignada a ${newTechnician?.name}`;
+				automaticNoteText = `👤 Reparación asignada a ${newTechnician?.nombre}`;
 				console.log('📝 Tipo de cambio: Primera asignación');
-			} else if (currentRepair.technicianId && !newTechnicianId) {
+			} else if (currentRepair.tecnicoId && !newTechnicianId) {
 				// Quitar asignación
-				automaticNoteText = `👤 Se quitó la asignación del técnico ${currentRepair.technician?.name}`;
+				automaticNoteText = `👤 Se quitó la asignación del técnico ${currentRepair.tecnico?.nombre}`;
 				console.log('📝 Tipo de cambio: Quitar asignación');
-			} else if (currentRepair.technicianId && newTechnicianId && currentRepair.technicianId !== newTechnicianId) {
+			} else if (currentRepair.tecnicoId && newTechnicianId && currentRepair.tecnicoId !== newTechnicianId) {
 				// Cambio de técnico
-				automaticNoteText = `👤 Reparación reasignada de ${currentRepair.technician?.name} a ${newTechnician?.name}`;
+				automaticNoteText = `👤 Reparación reasignada de ${currentRepair.tecnico?.nombre} a ${newTechnician?.nombre}`;
 				console.log('📝 Tipo de cambio: Reasignación');
 			}
 
@@ -482,11 +540,11 @@ export const actions: Actions = {
 			// Crear la nota automática si hay cambios
 			if (automaticNoteText) {
 				console.log('💾 Creando nota automática...');
-				await db.note.create({
+				await db.nota.create({
 					data: {
-						text: automaticNoteText,
-						repairId: params.id,
-						authorId: locals.user.id
+						texto: automaticNoteText,
+						reparacionId: params.id,
+						autorId: locals.user.id
 					}
 				});
 				console.log('✅ Nota automática creada');
@@ -520,7 +578,7 @@ export const actions: Actions = {
 
 		try {
 			// Obtener la reparación actual
-			const currentRepair = await db.repair.findUnique({
+			const currentRepair = await db.reparacion.findUnique({
 				where: { id: params.id }
 			});
 
@@ -529,37 +587,37 @@ export const actions: Actions = {
 			}
 
 			// Verificar permisos
-			if (locals.user.role === 'TECHNICIAN' && currentRepair.technicianId !== locals.user.id) {
+			if (locals.user.role === 'TECHNICIAN' && currentRepair.tecnicoId !== locals.user.id) {
 				throw error(403, 'Solo puedes completar tus reparaciones asignadas');
 			}
 
 			// Actualizar la reparación
 			const updateData: any = {
-				workPerformed: workPerformed.trim(),
-				finalObservations: finalObservations?.trim() || null,
-				updatedAt: new Date()
+				trabajoRealizado: workPerformed.trim(),
+				observacionesFinales: finalObservations?.trim() || null,
+				actualizadoEn: new Date()
 			};
 			
-			// Solo cambiar el estado si no está ya en COMPLETED o RETIRADO
-			if (currentRepair.status !== 'COMPLETED' && currentRepair.status !== 'RETIRADO') {
-				updateData.status = 'COMPLETED';
+			// Solo cambiar el estado si no está ya en COMPLETADO o RETIRADO
+			if (currentRepair.estado !== 'COMPLETADO' && currentRepair.estado !== 'RETIRADO') {
+				updateData.estado = 'COMPLETADO';
 			}
 			
-			await db.repair.update({
+			await db.reparacion.update({
 				where: { id: params.id },
 				data: updateData
 			});
 
 			// Crear nota automática
-			const noteText = (currentRepair.status === 'COMPLETED' || currentRepair.status === 'RETIRADO')
+			const noteText = (currentRepair.estado === 'COMPLETADO' || currentRepair.estado === 'RETIRADO')
 				? `📝 Información de reparación actualizada\n🔧 Trabajo realizado: ${workPerformed.trim()}${finalObservations ? '\n💬 Observaciones: ' + finalObservations.trim() : ''}`
 				: `✅ Reparación completada\n🔧 Trabajo realizado: ${workPerformed.trim()}${finalObservations ? '\n📝 Observaciones: ' + finalObservations.trim() : ''}`;
 				
-			await db.note.create({
+			await db.nota.create({
 				data: {
-					text: noteText,
-					repairId: params.id,
-					authorId: locals.user.id
+					texto: noteText,
+					reparacionId: params.id,
+					autorId: locals.user.id
 				}
 			});
 
@@ -586,7 +644,7 @@ export const actions: Actions = {
 
 		try {
 			// Obtener la reparación actual
-			const currentRepair = await db.repair.findUnique({
+			const currentRepair = await db.reparacion.findUnique({
 				where: { id: params.id }
 			});
 
@@ -595,17 +653,17 @@ export const actions: Actions = {
 			}
 
 			// Verificar permisos
-			if (locals.user.role === 'TECHNICIAN' && currentRepair.technicianId !== locals.user.id) {
+			if (locals.user.role === 'TECHNICIAN' && currentRepair.tecnicoId !== locals.user.id) {
 				throw error(403, 'Solo puedes actualizar tus reparaciones asignadas');
 			}
 
 			// Actualizar solo los campos de trabajo sin cambiar el estado
-			await db.repair.update({
+			await db.reparacion.update({
 				where: { id: params.id },
 				data: {
-					workPerformed: workPerformed?.trim() || null,
-					finalObservations: finalObservations?.trim() || null,
-					updatedAt: new Date()
+					trabajoRealizado: workPerformed?.trim() || null,
+					observacionesFinales: finalObservations?.trim() || null,
+					actualizadoEn: new Date()
 				}
 			});
 
@@ -636,7 +694,7 @@ export const actions: Actions = {
 
 		try {
 			// Obtener la reparación actual
-			const currentRepair = await db.repair.findUnique({
+			const currentRepair = await db.reparacion.findUnique({
 				where: { id: params.id }
 			});
 
@@ -645,37 +703,37 @@ export const actions: Actions = {
 			}
 
 			// Verificar permisos
-			if (locals.user.role === 'TECHNICIAN' && currentRepair.technicianId !== locals.user.id) {
+			if (locals.user.role === 'TECHNICIAN' && currentRepair.tecnicoId !== locals.user.id) {
 				throw error(403, 'Solo puedes cancelar tus reparaciones asignadas');
 			}
 
 			// Actualizar la reparación
 			const updateData: any = {
-				cancellationReason: cancellationReason.trim(),
-				finalObservations: finalObservations?.trim() || null,
-				updatedAt: new Date()
+				motivoCancelacion: cancellationReason.trim(),
+				observacionesFinales: finalObservations?.trim() || null,
+				actualizadoEn: new Date()
 			};
 			
-			// Solo cambiar el estado si no está ya en CANCELLED
-			if (currentRepair.status !== 'CANCELLED') {
-				updateData.status = 'CANCELLED';
+			// Solo cambiar el estado si no está ya en CANCELADO
+			if (currentRepair.estado !== 'CANCELADO') {
+				updateData.estado = 'CANCELADO';
 			}
 			
-			await db.repair.update({
+			await db.reparacion.update({
 				where: { id: params.id },
 				data: updateData
 			});
 
 			// Crear nota automática
-			const noteText = currentRepair.status === 'CANCELLED'
+			const noteText = currentRepair.estado === 'CANCELADO'
 				? `📝 Información de cancelación actualizada\n❌ Motivo: ${cancellationReason.trim()}${finalObservations ? '\n💬 Observaciones: ' + finalObservations.trim() : ''}`
 				: `❌ Reparación cancelada\n📝 Motivo: ${cancellationReason.trim()}${finalObservations ? '\n💬 Observaciones: ' + finalObservations.trim() : ''}`;
 				
-			await db.note.create({
+			await db.nota.create({
 				data: {
-					text: noteText,
-					repairId: params.id,
-					authorId: locals.user.id
+					texto: noteText,
+					reparacionId: params.id,
+					autorId: locals.user.id
 				}
 			});
 
