@@ -32,10 +32,11 @@ export const actions: Actions = {
 			clearLoginAttempts(username);
 			
 			// Obtener el ID del usuario de la base de datos
-			const dbUser = await db.user.findUnique({
-				where: { username },
-				select: { id: true }
-			});
+			const dbUser = await db.usuario.findUnique({
+  				where: { nombreUsuario: username },
+  				select: { id: true }
+		});
+
 			
 			// Crear token firmado con ID de la base de datos
 			const token = createSignedToken({
